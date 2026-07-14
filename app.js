@@ -3,15 +3,22 @@ const API_URL =
 
 let scanner = null;
 let scannerRunning = false;
+let lastScan = "";
 
 const result =
-  document.getElementById("result");
+  document.getElementById(
+    "result"
+  );
 
 const startBtn =
-  document.getElementById("startBtn");
+  document.getElementById(
+    "startBtn"
+  );
 
 const stopBtn =
-  document.getElementById("stopBtn");
+  document.getElementById(
+    "stopBtn"
+  );
 
 startBtn.addEventListener(
   "click",
@@ -35,10 +42,12 @@ async function startScanner() {
       "Starting camera...";
 
     if (!scanner) {
+
       scanner =
         new Html5Qrcode(
           "reader"
         );
+
     }
 
     await scanner.start(
@@ -109,37 +118,40 @@ async function onScanSuccess(
     return;
   }
 
+  // prevent duplicate scans
+  if (
+    lastScan === decodedText
+  ) {
+    return;
+  }
+
+  lastScan =
+    decodedText;
+
   result.innerHTML =
     "Processing...";
 
   try {
 
+    const url =
+      API_URL +
+      "?action=scan" +
+      "&token=" +
+      encodeURIComponent(
+        decodedText
+      ) +
+      "&staff=" +
+      encodeURIComponent(
+        "GitHub Scanner"
+      ) +
+      "&device=" +
+      encodeURIComponent(
+        navigator.userAgent
+      );
+
     const response =
       await fetch(
-        API_URL,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-          body:
-            JSON.stringify({
-
-              action:
-                "scan",
-
-              token:
-                decodedText,
-
-              staff:
-                "GitHub Scanner",
-
-              device:
-                navigator.userAgent
-
-            })
-        }
+        url
       );
 
     const data =
@@ -155,8 +167,15 @@ async function onScanSuccess(
     console.error(err);
 
     result.innerHTML =
-      "Server Error";
+      err.toString();
 
   }
+
+  setTimeout(
+    function () {
+      lastScan = "";
+    },
+    2000
+  );
 
 }
