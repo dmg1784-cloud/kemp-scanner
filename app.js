@@ -147,15 +147,33 @@ async function onScanSuccess(
       "&device=" +
       encodeURIComponent(
         navigator.userAgent
-      );
+      ) +
+      "&t=" +
+      Date.now();
 
     const response =
       await fetch(
-        url
+        url,
+        {
+          method: "GET",
+          mode: "cors",
+          redirect: "follow",
+          cache: "no-store"
+        }
       );
 
+    const text =
+      await response.text();
+
+    console.log(
+      "API Response:",
+      text
+    );
+
     const data =
-      await response.json();
+      JSON.parse(
+        text
+      );
 
     result.innerHTML =
       data.message ||
@@ -173,7 +191,9 @@ async function onScanSuccess(
 
   setTimeout(
     function () {
+
       lastScan = "";
+
     },
     2000
   );
