@@ -34,10 +34,12 @@ async function startScanner() {
     result.innerHTML =
       "Starting camera...";
 
-    scanner =
-      new Html5Qrcode(
-        "reader"
-      );
+    if (!scanner) {
+      scanner =
+        new Html5Qrcode(
+          "reader"
+        );
+    }
 
     await scanner.start(
       {
@@ -51,7 +53,8 @@ async function startScanner() {
       onScanSuccess
     );
 
-    scannerRunning = true;
+    scannerRunning =
+      true;
 
     result.innerHTML =
       "Ready to scan";
@@ -81,7 +84,8 @@ async function stopScanner() {
 
     await scanner.stop();
 
-    scannerRunning = false;
+    scannerRunning =
+      false;
 
     result.innerHTML =
       "Scanner stopped";
@@ -99,7 +103,9 @@ async function onScanSuccess(
   decodedText
 ) {
 
-  if (!scannerRunning) {
+  if (
+    !scannerRunning
+  ) {
     return;
   }
 
@@ -119,8 +125,19 @@ async function onScanSuccess(
           },
           body:
             JSON.stringify({
+
+              action:
+                "scan",
+
               token:
-                decodedText
+                decodedText,
+
+              staff:
+                "GitHub Scanner",
+
+              device:
+                navigator.userAgent
+
             })
         }
       );
@@ -129,7 +146,8 @@ async function onScanSuccess(
       await response.json();
 
     result.innerHTML =
-      data.message;
+      data.message ||
+      "Done";
 
   }
   catch (err) {
