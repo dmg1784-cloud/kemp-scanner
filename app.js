@@ -1,5 +1,5 @@
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbwSr9GRYGnsCvsBa5IWY1lZECpQys-LfA99AyW14bMvbgnM6_02IZwvAOauYSybILioMg/exec";
+  "https://kemp-scanner-proxy.dmg1784.workers.dev";
 
 let scanner = null;
 let scannerRunning = false;
@@ -52,11 +52,22 @@ async function startScanner() {
 
     }
 
+    const cameras =
+      await Html5Qrcode.getCameras();
+
+    if (
+      !cameras ||
+      cameras.length === 0
+    ) {
+
+      throw new Error(
+        "No camera found."
+      );
+
+    }
+
     await scanner.start(
-      {
-        facingMode:
-          "environment"
-      },
+      cameras[0].id,
       {
         fps: 10,
         qrbox: 250
@@ -73,10 +84,12 @@ async function startScanner() {
   }
   catch (err) {
 
-    console.error(err);
+    console.error(
+      err
+    );
 
     result.innerHTML =
-      "Unable to access camera";
+      err.toString();
 
   }
 
@@ -104,7 +117,9 @@ async function stopScanner() {
   }
   catch (err) {
 
-    console.error(err);
+    console.error(
+      err
+    );
 
   }
 
@@ -137,8 +152,7 @@ async function onScanSuccess(
 
     const url =
       API_URL +
-      "?action=scan" +
-      "&token=" +
+      "?token=" +
       encodeURIComponent(
         decodedText
       ) +
@@ -149,9 +163,7 @@ async function onScanSuccess(
       "&device=" +
       encodeURIComponent(
         navigator.userAgent
-      ) +
-      "&t=" +
-      Date.now();
+      );
 
     const response =
       await fetch(
@@ -162,20 +174,12 @@ async function onScanSuccess(
         }
       );
 
-    const text =
-      await response.text();
-
-    console.log(
-      text
-    );
-
     const data =
-      JSON.parse(
-        text
-      );
+      await response.json();
 
     result.innerHTML =
-      data.message;
+      data.message ||
+      "Done";
 
   }
   catch (err) {
