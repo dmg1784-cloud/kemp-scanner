@@ -66,8 +66,45 @@ async function startScanner() {
 
     }
 
+    // =====================================
+    // Prefer Back Camera
+    // =====================================
+
+    let cameraId =
+      cameras[0].id;
+
+    for (
+      const cam of cameras
+    ) {
+
+      const label =
+        (
+          cam.label || ""
+        ).toLowerCase();
+
+      if (
+        label.includes(
+          "back"
+        ) ||
+        label.includes(
+          "rear"
+        ) ||
+        label.includes(
+          "environment"
+        )
+      ) {
+
+        cameraId =
+          cam.id;
+
+        break;
+
+      }
+
+    }
+
     await scanner.start(
-      cameras[0].id,
+      cameraId,
       {
         fps: 10,
         qrbox: 250
