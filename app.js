@@ -34,7 +34,9 @@ async function startScanner() {
 
   try {
 
-    if (scannerRunning) {
+    if (
+      scannerRunning
+    ) {
       return;
     }
 
@@ -118,9 +120,9 @@ async function onScanSuccess(
     return;
   }
 
-  // prevent duplicate scans
   if (
-    lastScan === decodedText
+    lastScan ===
+    decodedText
   ) {
     return;
   }
@@ -156,8 +158,6 @@ async function onScanSuccess(
         url,
         {
           method: "GET",
-          mode: "cors",
-          redirect: "follow",
           cache: "no-store"
         }
       );
@@ -166,7 +166,6 @@ async function onScanSuccess(
       await response.text();
 
     console.log(
-      "API Response:",
       text
     );
 
@@ -176,13 +175,14 @@ async function onScanSuccess(
       );
 
     result.innerHTML =
-      data.message ||
-      "Done";
+      data.message;
 
   }
   catch (err) {
 
-    console.error(err);
+    console.error(
+      err
+    );
 
     result.innerHTML =
       err.toString();
