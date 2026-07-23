@@ -1,10 +1,11 @@
-const CACHE_NAME = "kemp-scanner-v1";
+const CACHE_NAME = "kemp-scanner-v2";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
+  "./offline.js",
   "./manifest.json"
 ];
 
@@ -31,7 +32,9 @@ self.addEventListener("activate", event => {
         keys.map(key => {
 
           if (key !== CACHE_NAME) {
+
             return caches.delete(key);
+
           }
 
         })
@@ -52,43 +55,41 @@ self.addEventListener("fetch", event => {
 
   event.respondWith(
 
-    caches.match(event.request)
+    fetch(event.request)
 
-      .then(cachedResponse => {
+      .then(networkResponse => {
 
-        if (cachedResponse) {
-          return cachedResponse;
+        if (event.request.url.startsWith(self.location.origin)) {
+
+          const copy = networkResponse.clone();
+
+          caches.open(CACHE_NAME)
+            .then(cache => {
+
+              cache.put(event.request, copy);
+
+            });
+
         }
 
-        return fetch(event.request)
-
-          .then(networkResponse => {
-
-            // Huwag i-cache ang external requests
-            if (
-              event.request.url.startsWith(self.location.origin)
-            ) {
-
-              const copy = networkResponse.clone();
-
-              caches.open(CACHE_NAME)
-                .then(cache => {
-
-                  cache.put(event.request, copy);
-
-                });
-
-            }
-
-            return networkResponse;
-
-          });
+        return networkResponse;
 
       })
 
       .catch(() => {
 
-        return caches.match("./index.html");
+        return caches.match(event.request)
+          .then(response => {
+
+            if (response) {
+
+              return response;
+
+            }
+
+            return caches.match("./index.html");
+
+          });
 
       })
 
