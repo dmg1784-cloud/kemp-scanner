@@ -1,8 +1,9 @@
 {
+  "id": "/",
   "name": "KEMP Scanner",
   "short_name": "KEMP",
   "description": "Offline QR Scanner for KEMP",
-  "start_url": "./",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1976d2",
