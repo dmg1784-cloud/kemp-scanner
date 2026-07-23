@@ -83,7 +83,7 @@ loginBtn.addEventListener("click", () => {
 
   if (!name) {
 
-    alert("Enter Staff Name");
+    alert("Please enter your name.");
     return;
 
   }
@@ -100,6 +100,12 @@ loginBtn.addEventListener("click", () => {
 });
 
 changeStaffBtn.addEventListener("click", () => {
+
+  if (scannerRunning) {
+
+    stopScanner();
+
+  }
 
   localStorage.removeItem("staffName");
 
@@ -161,7 +167,9 @@ async function startScanner() {
 
   try {
 
-    if (scannerRunning) return;
+    if (scannerRunning) {
+      return;
+    }
 
     result.innerHTML =
       "Starting camera...";
@@ -176,7 +184,7 @@ async function startScanner() {
     const cameras =
       await Html5Qrcode.getCameras();
 
-    if (!cameras.length) {
+    if (!cameras || cameras.length === 0) {
 
       throw new Error(
         "No camera found."
@@ -199,7 +207,9 @@ async function startScanner() {
         label.includes("environment")
       ) {
 
-        cameraId = cam.id;
+        cameraId =
+          cam.id;
+
         break;
 
       }
@@ -222,7 +232,7 @@ async function startScanner() {
     scannerRunning = true;
 
     result.innerHTML =
-      "Ready to scan";
+      "Ready to Scan";
 
   }
 
@@ -236,17 +246,17 @@ async function startScanner() {
   }
 
 }
-
 // =========================
-// STOP
+// STOP SCANNER
 // =========================
 
 async function stopScanner() {
 
   try {
 
-    if (!scannerRunning)
+    if (!scanner || !scannerRunning) {
       return;
+    }
 
     await scanner.stop();
 
@@ -256,7 +266,6 @@ async function stopScanner() {
       "Scanner stopped";
 
   }
-
   catch (err) {
 
     console.error(err);
@@ -266,20 +275,26 @@ async function stopScanner() {
 }
 
 // =========================
-// SCAN
+// SCAN SUCCESS
 // =========================
 
 async function onScanSuccess(
   decodedText
 ) {
 
-  if (!scannerRunning)
+  if (!scannerRunning) {
     return;
+  }
 
-  if (lastScan === decodedText)
+  if (lastScan === decodedText) {
     return;
+  }
 
   lastScan = decodedText;
+
+  // ==========================
+  // OFFLINE MODE
+  // ==========================
 
   if (!navigator.onLine) {
 
@@ -288,7 +303,9 @@ async function onScanSuccess(
       await saveOfflineScan({
 
         token: decodedText,
+
         staff: STAFF_NAME,
+
         device: DEVICE_NAME
 
       });
@@ -297,8 +314,9 @@ async function onScanSuccess(
         "✅ Saved Offline";
 
     }
+    catch (err) {
 
-    catch {
+      console.error(err);
 
       result.innerHTML =
         "❌ Offline Save Failed";
@@ -344,7 +362,6 @@ async function onScanSuccess(
       data.message || "Done";
 
   }
-
   catch (err) {
 
     console.error(err);
@@ -368,19 +385,22 @@ async function onScanSuccess(
 
 if ("serviceWorker" in navigator) {
 
-  window.addEventListener("load", () => {
+  window.addEventListener(
+    "load",
+    () => {
 
-    navigator.serviceWorker
-      .register("sw.js")
-      .then(() => {
+      navigator.serviceWorker
+        .register("sw.js")
+        .then(() => {
 
-        console.log(
-          "✅ Service Worker Registered"
-        );
+          console.log(
+            "✅ Service Worker Registered"
+          );
 
-      })
-      .catch(console.error);
+        })
+        .catch(console.error);
 
-  });
+    }
+  );
 
 }
