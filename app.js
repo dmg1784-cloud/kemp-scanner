@@ -255,8 +255,28 @@ async function onScanSuccess(
 
     console.error(err);
 
-    result.innerHTML =
-      err.toString();
+    if (!navigator.onLine) {
+
+      await saveOfflineScan({
+
+        token: decodedText,
+
+        staff: STAFF_NAME,
+
+        device: DEVICE_NAME
+
+      });
+
+      result.innerHTML =
+        "✅ Saved Offline";
+
+    }
+    else {
+
+      result.innerHTML =
+        err.toString();
+
+    }
 
   }
 
@@ -270,12 +290,13 @@ async function onScanSuccess(
   );
 
 }
+
 if ("serviceWorker" in navigator) {
 
   window.addEventListener("load", () => {
 
     navigator.serviceWorker
-      .register("./sw.js")
+      .register("sw.js")
       .then(() => {
 
         console.log("✅ Service Worker Registered");
