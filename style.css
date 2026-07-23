@@ -34,6 +34,13 @@ button:hover {
   margin: auto;
 }
 
+#status {
+  margin-top: 15px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
 #result {
   margin-top: 20px;
   font-size: 22px;
