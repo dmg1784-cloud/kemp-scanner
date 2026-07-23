@@ -23,9 +23,6 @@ const startBtn =
 const stopBtn =
   document.getElementById("stopBtn");
 
-const testBtn =
-  document.getElementById("testBtn");
-
 startBtn.addEventListener(
   "click",
   startScanner
@@ -34,29 +31,6 @@ startBtn.addEventListener(
 stopBtn.addEventListener(
   "click",
   stopScanner
-);
-
-testBtn.addEventListener(
-  "click",
-  async function () {
-
-    await saveOfflineScan({
-
-      token:
-        "TEST-" + Date.now(),
-
-      staff:
-        STAFF_NAME,
-
-      device:
-        DEVICE_NAME
-
-    });
-
-    result.innerHTML =
-      "🧪 Test Scan Saved";
-
-  }
 );
 
 window.addEventListener(
@@ -291,7 +265,8 @@ if ("serviceWorker" in navigator) {
             "✅ Service Worker Registered"
           );
 
-        });
+        })
+        .catch(console.error);
 
     }
   );
