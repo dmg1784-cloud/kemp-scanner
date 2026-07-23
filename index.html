@@ -5,15 +5,23 @@
 
   <meta charset="UTF-8">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1">
 
   <title>KEMP Scanner</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link
+    rel="stylesheet"
+    href="style.css">
 
-  <link rel="manifest" href="manifest.json">
+  <link
+    rel="manifest"
+    href="manifest.json">
 
-  <meta name="theme-color" content="#1976d2">
+  <meta
+    name="theme-color"
+    content="#1976d2">
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -23,14 +31,18 @@
 
   <h1>KEMP Scanner</h1>
 
-  <div class="card" id="loginCard">
+  <!-- LOGIN -->
+  <div
+    class="card"
+    id="loginCard">
 
-    <h3>Staff Login</h3>
+    <h2>👤 Staff Login</h2>
 
     <input
-      type="text"
       id="staffName"
-      placeholder="Enter Staff Name">
+      type="text"
+      placeholder="Enter Staff Name"
+      autocomplete="off">
 
     <button id="loginBtn">
       Continue
@@ -38,7 +50,10 @@
 
   </div>
 
-  <div id="scannerSection" style="display:none;">
+  <!-- SCANNER -->
+  <div
+    id="scannerSection"
+    style="display:none;">
 
     <div class="card">
 
