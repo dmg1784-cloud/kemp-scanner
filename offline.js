@@ -45,6 +45,8 @@ async function initOfflineDB() {
 
       console.log("✅ Offline DB Ready");
 
+      syncOfflineScans();
+
       resolve();
 
     };
@@ -75,14 +77,9 @@ async function saveOfflineScan(scan) {
     store.add({
 
       token: scan.token,
-
       staff: scan.staff,
-
       device: scan.device,
-
-      timestamp: Date.now(),
-
-      synced: false
+      timestamp: Date.now()
 
     });
 
@@ -94,11 +91,7 @@ async function saveOfflineScan(scan) {
 
     };
 
-    tx.onerror = e => {
-
-      reject(e);
-
-    };
+    tx.onerror = reject;
 
   });
 
@@ -122,11 +115,7 @@ async function getPendingScans() {
 
     request.onsuccess = () => {
 
-      resolve(
-        request.result.filter(
-          x => !x.synced
-        )
-      );
+      resolve(request.result);
 
     };
 
@@ -135,6 +124,99 @@ async function getPendingScans() {
   });
 
 }
+
+async function deleteOfflineScan(id) {
+
+  return new Promise((resolve, reject) => {
+
+    const tx =
+      offlineDB.transaction(
+        STORE_NAME,
+        "readwrite"
+      );
+
+    const store =
+      tx.objectStore(STORE_NAME);
+
+    store.delete(id);
+
+    tx.oncomplete = resolve;
+
+    tx.onerror = reject;
+
+  });
+
+}
+
+async function syncOfflineScans() {
+
+  if (!navigator.onLine) {
+    return;
+  }
+
+  const scans =
+    await getPendingScans();
+
+  if (scans.length === 0) {
+
+    console.log("✅ No Pending Scans");
+
+    return;
+
+  }
+
+  console.log(
+    "🔄 Syncing",
+    scans.length,
+    "scan(s)..."
+  );
+
+  for (const scan of scans) {
+
+    try {
+
+      const url =
+        API_URL +
+        "?token=" +
+        encodeURIComponent(scan.token) +
+        "&staff=" +
+        encodeURIComponent(scan.staff) +
+        "&device=" +
+        encodeURIComponent(scan.device);
+
+      const response =
+        await fetch(url);
+
+      if (!response.ok) {
+
+        throw new Error("Upload Failed");
+
+      }
+
+      await deleteOfflineScan(scan.id);
+
+      console.log(
+        "✅ Synced",
+        scan.token
+      );
+
+    }
+    catch (err) {
+
+      console.error(err);
+
+      break;
+
+    }
+
+  }
+
+}
+
+window.addEventListener(
+  "online",
+  syncOfflineScans
+);
 
 window.addEventListener(
   "load",
