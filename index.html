@@ -3,94 +3,113 @@
 
 <head>
 
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1">
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1">
 
-  <title>KEMP Scanner</title>
+<title>KEMP Scanner</title>
 
-  <link
-    rel="stylesheet"
-    href="style.css">
+<link
+rel="stylesheet"
+href="style.css">
 
-  <link
-    rel="manifest"
-    href="manifest.json">
+<link
+rel="manifest"
+href="manifest.json">
 
-  <meta
-    name="theme-color"
-    content="#1976d2">
+<meta
+name="theme-color"
+content="#1976d2">
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 </head>
 
 <body>
 
-  <h1>KEMP Scanner</h1>
+<div class="container">
 
-  <!-- LOGIN -->
-  <div
-    class="card"
-    id="loginCard">
+<h1>KEMP Scanner</h1>
 
-    <h2>👤 Staff Login</h2>
+<!-- STAFF LOGIN -->
 
-    <input
-      id="staffName"
-      type="text"
-      placeholder="Enter Staff Name"
-      autocomplete="off">
+<div
+class="card"
+id="loginCard">
 
-    <button id="loginBtn">
-      Continue
-    </button>
+<h2>👤 Staff Login</h2>
 
-  </div>
+<input
+id="staffName"
+type="text"
+placeholder="Enter Staff Name">
 
-  <!-- SCANNER -->
-  <div
-    id="scannerSection"
-    style="display:none;">
+<button id="loginBtn">
 
-    <div class="card">
+Continue
 
-      <div id="currentStaff"></div>
+</button>
 
-      <button id="changeStaffBtn">
-        Change Staff
-      </button>
+</div>
 
-    </div>
+<!-- SCANNER -->
 
-    <div class="card">
+<div
+id="scannerSection"
+style="display:none;">
 
-      <button id="startBtn">
-        ▶️ Start Scanner
-      </button>
+<div class="card">
 
-      <button id="stopBtn">
-        ⏹️ Stop Scanner
-      </button>
+<div id="currentStaff">
 
-    </div>
+</div>
 
-    <div id="reader"></div>
+<button id="changeStaffBtn">
 
-    <div id="status">
-      🟢 Online
-    </div>
+Change Staff
 
-    <div id="result">
-      Ready to Scan
-    </div>
+</button>
 
-  </div>
+</div>
 
-  <script src="offline.js"></script>
-  <script src="app.js"></script>
+<div class="card buttons">
+
+<button id="startBtn">
+
+▶️ Start Scanner
+
+</button>
+
+<button id="stopBtn">
+
+⏹️ Stop Scanner
+
+</button>
+
+</div>
+
+<div id="reader"></div>
+
+<div id="status">
+
+🟢 Online
+
+</div>
+
+<div id="result">
+
+Ready
+
+</div>
+
+</div>
+
+</div>
+
+<script src="offline.js"></script>
+<script src="app.js"></script>
 
 </body>
 
