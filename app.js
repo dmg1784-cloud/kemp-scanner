@@ -1,9 +1,20 @@
 const API_URL =
   "https://kemp-scanner-proxy.dmg1784.workers.dev";
 
+const STAFF_NAME =
+  "GitHub Scanner";
+
+const DEVICE_NAME =
+  navigator.userAgent;
+
 let scanner = null;
 let scannerRunning = false;
 let lastScan = "";
+
+const status =
+  document.getElementById(
+    "status"
+  );
 
 const result =
   document.getElementById(
@@ -29,6 +40,35 @@ stopBtn.addEventListener(
   "click",
   stopScanner
 );
+
+window.addEventListener(
+  "online",
+  updateConnectionStatus
+);
+
+window.addEventListener(
+  "offline",
+  updateConnectionStatus
+);
+
+updateConnectionStatus();
+
+function updateConnectionStatus() {
+
+  if (navigator.onLine) {
+
+    status.innerHTML =
+      "🟢 Online";
+
+  }
+  else {
+
+    status.innerHTML =
+      "🔴 Offline Mode";
+
+  }
+
+}
 
 async function startScanner() {
 
@@ -65,10 +105,6 @@ async function startScanner() {
       );
 
     }
-
-    // =====================================
-    // Prefer Back Camera
-    // =====================================
 
     let cameraId =
       cameras[0].id;
@@ -121,9 +157,7 @@ async function startScanner() {
   }
   catch (err) {
 
-    console.error(
-      err
-    );
+    console.error(err);
 
     result.innerHTML =
       err.toString();
@@ -154,9 +188,7 @@ async function stopScanner() {
   }
   catch (err) {
 
-    console.error(
-      err
-    );
+    console.error(err);
 
   }
 
@@ -195,11 +227,11 @@ async function onScanSuccess(
       ) +
       "&staff=" +
       encodeURIComponent(
-        "GitHub Scanner"
+        STAFF_NAME
       ) +
       "&device=" +
       encodeURIComponent(
-        navigator.userAgent
+        DEVICE_NAME
       );
 
     const response =
@@ -221,9 +253,7 @@ async function onScanSuccess(
   }
   catch (err) {
 
-    console.error(
-      err
-    );
+    console.error(err);
 
     result.innerHTML =
       err.toString();
