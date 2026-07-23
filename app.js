@@ -12,24 +12,19 @@ let scannerRunning = false;
 let lastScan = "";
 
 const status =
-  document.getElementById(
-    "status"
-  );
+  document.getElementById("status");
 
 const result =
-  document.getElementById(
-    "result"
-  );
+  document.getElementById("result");
 
 const startBtn =
-  document.getElementById(
-    "startBtn"
-  );
+  document.getElementById("startBtn");
 
 const stopBtn =
-  document.getElementById(
-    "stopBtn"
-  );
+  document.getElementById("stopBtn");
+
+const testBtn =
+  document.getElementById("testBtn");
 
 startBtn.addEventListener(
   "click",
@@ -39,6 +34,29 @@ startBtn.addEventListener(
 stopBtn.addEventListener(
   "click",
   stopScanner
+);
+
+testBtn.addEventListener(
+  "click",
+  async function () {
+
+    await saveOfflineScan({
+
+      token:
+        "TEST-" + Date.now(),
+
+      staff:
+        STAFF_NAME,
+
+      device:
+        DEVICE_NAME
+
+    });
+
+    result.innerHTML =
+      "🧪 Test Scan Saved";
+
+  }
 );
 
 window.addEventListener(
@@ -74,9 +92,7 @@ async function startScanner() {
 
   try {
 
-    if (
-      scannerRunning
-    ) {
+    if (scannerRunning) {
       return;
     }
 
@@ -95,10 +111,7 @@ async function startScanner() {
     const cameras =
       await Html5Qrcode.getCameras();
 
-    if (
-      !cameras ||
-      cameras.length === 0
-    ) {
+    if (!cameras || cameras.length === 0) {
 
       throw new Error(
         "No camera found."
@@ -109,25 +122,16 @@ async function startScanner() {
     let cameraId =
       cameras[0].id;
 
-    for (
-      const cam of cameras
-    ) {
+    for (const cam of cameras) {
 
       const label =
-        (
-          cam.label || ""
-        ).toLowerCase();
+        (cam.label || "")
+        .toLowerCase();
 
       if (
-        label.includes(
-          "back"
-        ) ||
-        label.includes(
-          "rear"
-        ) ||
-        label.includes(
-          "environment"
-        )
+        label.includes("back") ||
+        label.includes("rear") ||
+        label.includes("environment")
       ) {
 
         cameraId =
@@ -140,16 +144,19 @@ async function startScanner() {
     }
 
     await scanner.start(
+
       cameraId,
+
       {
         fps: 10,
         qrbox: 250
       },
+
       onScanSuccess
+
     );
 
-    scannerRunning =
-      true;
+    scannerRunning = true;
 
     result.innerHTML =
       "Ready to scan";
@@ -170,17 +177,13 @@ async function stopScanner() {
 
   try {
 
-    if (
-      !scanner ||
-      !scannerRunning
-    ) {
+    if (!scanner || !scannerRunning) {
       return;
     }
 
     await scanner.stop();
 
-    scannerRunning =
-      false;
+    scannerRunning = false;
 
     result.innerHTML =
       "Scanner stopped";
@@ -198,21 +201,15 @@ async function onScanSuccess(
   decodedText
 ) {
 
-  if (
-    !scannerRunning
-  ) {
+  if (!scannerRunning) {
     return;
   }
 
-  if (
-    lastScan ===
-    decodedText
-  ) {
+  if (lastScan === decodedText) {
     return;
   }
 
-  lastScan =
-    decodedText;
+  lastScan = decodedText;
 
   result.innerHTML =
     "Processing...";
@@ -222,33 +219,25 @@ async function onScanSuccess(
     const url =
       API_URL +
       "?token=" +
-      encodeURIComponent(
-        decodedText
-      ) +
+      encodeURIComponent(decodedText) +
       "&staff=" +
-      encodeURIComponent(
-        STAFF_NAME
-      ) +
+      encodeURIComponent(STAFF_NAME) +
       "&device=" +
-      encodeURIComponent(
-        DEVICE_NAME
-      );
+      encodeURIComponent(DEVICE_NAME);
 
     const response =
-      await fetch(
-        url,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
+      await fetch(url, {
+
+        method: "GET",
+        cache: "no-store"
+
+      });
 
     const data =
       await response.json();
 
     result.innerHTML =
-      data.message ||
-      "Done";
+      data.message || "Done";
 
   }
   catch (err) {
@@ -280,34 +269,31 @@ async function onScanSuccess(
 
   }
 
-  setTimeout(
-    function () {
+  setTimeout(() => {
 
-      lastScan = "";
+    lastScan = "";
 
-    },
-    2000
-  );
+  }, 2000);
 
 }
 
 if ("serviceWorker" in navigator) {
 
-  window.addEventListener("load", () => {
+  window.addEventListener(
+    "load",
+    () => {
 
-    navigator.serviceWorker
-      .register("sw.js")
-      .then(() => {
+      navigator.serviceWorker
+        .register("sw.js")
+        .then(() => {
 
-        console.log("✅ Service Worker Registered");
+          console.log(
+            "✅ Service Worker Registered"
+          );
 
-      })
-      .catch(err => {
+        });
 
-        console.error(err);
-
-      });
-
-  });
+    }
+  );
 
 }
