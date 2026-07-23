@@ -185,6 +185,46 @@ async function onScanSuccess(
 
   lastScan = decodedText;
 
+  // ==========================
+  // OFFLINE MODE
+  // ==========================
+  if (!navigator.onLine) {
+
+    try {
+
+      await saveOfflineScan({
+
+        token: decodedText,
+
+        staff: STAFF_NAME,
+
+        device: DEVICE_NAME
+
+      });
+
+      result.innerHTML =
+        "✅ Saved Offline";
+
+    }
+    catch (err) {
+
+      console.error(err);
+
+      result.innerHTML =
+        "❌ Offline Save Failed";
+
+    }
+
+    setTimeout(() => {
+
+      lastScan = "";
+
+    }, 2000);
+
+    return;
+
+  }
+
   result.innerHTML =
     "Processing...";
 
@@ -218,28 +258,8 @@ async function onScanSuccess(
 
     console.error(err);
 
-    if (!navigator.onLine) {
-
-      await saveOfflineScan({
-
-        token: decodedText,
-
-        staff: STAFF_NAME,
-
-        device: DEVICE_NAME
-
-      });
-
-      result.innerHTML =
-        "✅ Saved Offline";
-
-    }
-    else {
-
-      result.innerHTML =
-        err.toString();
-
-    }
+    result.innerHTML =
+      err.toString();
 
   }
 
