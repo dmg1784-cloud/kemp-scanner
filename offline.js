@@ -5,82 +5,60 @@ const STORE_NAME = "offlineQueue";
 let offlineDB = null;
 
 async function initOfflineDB() {
-
   return new Promise((resolve, reject) => {
 
-    const request = indexedDB.open(
-      DB_NAME,
-      DB_VERSION
-    );
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onupgradeneeded = function (event) {
+    request.onupgradeneeded = (event) => {
 
       const db = event.target.result;
 
       if (!db.objectStoreNames.contains(STORE_NAME)) {
 
-        const store = db.createObjectStore(
-          STORE_NAME,
-          {
-            keyPath: "id",
-            autoIncrement: true
-          }
-        );
-
-        store.createIndex(
-          "synced",
-          "synced",
-          {
-            unique: false
-          }
-        );
+        db.createObjectStore(STORE_NAME, {
+          keyPath: "id",
+          autoIncrement: true
+        });
 
       }
 
     };
 
-    request.onsuccess = function (event) {
+    request.onsuccess = (event) => {
 
       offlineDB = event.target.result;
 
       console.log("✅ Offline DB Ready");
 
-      syncOfflineScans();
+      if (navigator.onLine) {
+        syncOfflineScans();
+      }
 
       resolve();
 
     };
 
-    request.onerror = function (event) {
-
-      reject(event.target.error);
-
-    };
+    request.onerror = (event) => reject(event.target.error);
 
   });
-
 }
 
 async function saveOfflineScan(scan) {
 
+  if (!offlineDB) {
+    await initOfflineDB();
+  }
+
   return new Promise((resolve, reject) => {
 
-    const tx =
-      offlineDB.transaction(
-        STORE_NAME,
-        "readwrite"
-      );
-
-    const store =
-      tx.objectStore(STORE_NAME);
+    const tx = offlineDB.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
 
     store.add({
-
       token: scan.token,
       staff: scan.staff,
       device: scan.device,
       timestamp: Date.now()
-
     });
 
     tx.oncomplete = () => {
@@ -91,7 +69,7 @@ async function saveOfflineScan(scan) {
 
     };
 
-    tx.onerror = reject;
+    tx.onerror = (e) => reject(e.target.error);
 
   });
 
@@ -101,25 +79,13 @@ async function getPendingScans() {
 
   return new Promise((resolve, reject) => {
 
-    const tx =
-      offlineDB.transaction(
-        STORE_NAME,
-        "readonly"
-      );
+    const tx = offlineDB.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
 
-    const store =
-      tx.objectStore(STORE_NAME);
+    const request = store.getAll();
 
-    const request =
-      store.getAll();
-
-    request.onsuccess = () => {
-
-      resolve(request.result);
-
-    };
-
-    request.onerror = reject;
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = (e) => reject(e.target.error);
 
   });
 
@@ -129,20 +95,12 @@ async function deleteOfflineScan(id) {
 
   return new Promise((resolve, reject) => {
 
-    const tx =
-      offlineDB.transaction(
-        STORE_NAME,
-        "readwrite"
-      );
+    const tx = offlineDB.transaction(STORE_NAME, "readwrite");
 
-    const store =
-      tx.objectStore(STORE_NAME);
+    tx.objectStore(STORE_NAME).delete(id);
 
-    store.delete(id);
-
-    tx.oncomplete = resolve;
-
-    tx.onerror = reject;
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e.target.error);
 
   });
 
@@ -150,14 +108,12 @@ async function deleteOfflineScan(id) {
 
 async function syncOfflineScans() {
 
-  if (!navigator.onLine) {
-    return;
-  }
+  if (!navigator.onLine) return;
+  if (!offlineDB) return;
 
-  const scans =
-    await getPendingScans();
+  const scans = await getPendingScans();
 
-  if (scans.length === 0) {
+  if (!scans.length) {
 
     console.log("✅ No Pending Scans");
 
@@ -165,11 +121,7 @@ async function syncOfflineScans() {
 
   }
 
-  console.log(
-    "🔄 Syncing",
-    scans.length,
-    "scan(s)..."
-  );
+  console.log(`🔄 Syncing ${scans.length} scan(s)...`);
 
   for (const scan of scans) {
 
@@ -177,33 +129,29 @@ async function syncOfflineScans() {
 
       const url =
         API_URL +
-        "?token=" +
-        encodeURIComponent(scan.token) +
-        "&staff=" +
-        encodeURIComponent(scan.staff) +
-        "&device=" +
-        encodeURIComponent(scan.device);
+        "?token=" + encodeURIComponent(scan.token) +
+        "&staff=" + encodeURIComponent(scan.staff) +
+        "&device=" + encodeURIComponent(scan.device);
 
-      const response =
-        await fetch(url);
+      const response = await fetch(url, {
+        method: "GET",
+        cache: "no-store"
+      });
 
-      if (!response.ok) {
+      const data = await response.json();
 
-        throw new Error("Upload Failed");
-
+      if (!data.success) {
+        throw new Error(data.message || "Upload Failed");
       }
 
       await deleteOfflineScan(scan.id);
 
-      console.log(
-        "✅ Synced",
-        scan.token
-      );
+      console.log("✅ Synced:", scan.token);
 
     }
     catch (err) {
 
-      console.error(err);
+      console.error("❌ Sync Failed:", err);
 
       break;
 
@@ -213,12 +161,12 @@ async function syncOfflineScans() {
 
 }
 
-window.addEventListener(
-  "online",
-  syncOfflineScans
-);
+window.addEventListener("online", () => {
 
-window.addEventListener(
-  "load",
-  initOfflineDB
-);
+  console.log("🌐 Back Online");
+
+  syncOfflineScans();
+
+});
+
+window.addEventListener("load", initOfflineDB);
