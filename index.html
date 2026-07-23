@@ -1,72 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
 
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1"
-/>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
 
-<title>KEMP Scanner</title>
+  <title>KEMP Scanner</title>
 
-<link
-  rel="stylesheet"
-  href="style.css"
-/>
+  <link
+    rel="stylesheet"
+    href="style.css"
+  />
 
-<link
-  rel="manifest"
-  href="manifest.json"
-/>
+  <link
+    rel="manifest"
+    href="manifest.json"
+  />
 
-<meta
-  name="theme-color"
-  content="#1976d2"
-/>
+  <meta
+    name="theme-color"
+    content="#1976d2"
+  />
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
 </head>
 
 <body>
 
-<h1>
-KEMP Scanner
-</h1>
+  <h1>KEMP Scanner</h1>
 
-<div class="card">
+  <div class="card">
 
-<button id="startBtn">
-Start Scanner
-</button>
+    <button id="startBtn">
+      ▶️ Start Scanner
+    </button>
 
-<button id="stopBtn">
-Stop Scanner
-</button>
+    <button id="stopBtn">
+      ⏹️ Stop Scanner
+    </button>
 
-<br><br>
+  </div>
 
-<button id="testBtn">
-🧪 Add Test Scan
-</button>
+  <div id="reader"></div>
 
-</div>
+  <div id="status">
+    🟢 Online
+  </div>
 
-<div id="reader"></div>
+  <div id="result">
+    Ready to Scan
+  </div>
 
-<div id="status">
-🟢 Online
-</div>
-
-<div id="result">
-Ready
-</div>
-
-<script src="offline.js"></script>
-<script src="app.js"></script>
+  <script src="offline.js"></script>
+  <script src="app.js"></script>
 
 </body>
 
