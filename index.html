@@ -5,27 +5,15 @@
 
   <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>KEMP Scanner</title>
 
-  <link
-    rel="stylesheet"
-    href="style.css"
-  />
+  <link rel="stylesheet" href="style.css">
 
-  <link
-    rel="manifest"
-    href="manifest.json"
-  />
+  <link rel="manifest" href="manifest.json">
 
-  <meta
-    name="theme-color"
-    content="#1976d2"
-  />
+  <meta name="theme-color" content="#1976d2">
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -35,26 +23,55 @@
 
   <h1>KEMP Scanner</h1>
 
-  <div class="card">
+  <div class="card" id="loginCard">
 
-    <button id="startBtn">
-      ▶️ Start Scanner
-    </button>
+    <h3>Staff Login</h3>
 
-    <button id="stopBtn">
-      ⏹️ Stop Scanner
+    <input
+      type="text"
+      id="staffName"
+      placeholder="Enter Staff Name">
+
+    <button id="loginBtn">
+      Continue
     </button>
 
   </div>
 
-  <div id="reader"></div>
+  <div id="scannerSection" style="display:none;">
 
-  <div id="status">
-    🟢 Online
-  </div>
+    <div class="card">
 
-  <div id="result">
-    Ready to Scan
+      <div id="currentStaff"></div>
+
+      <button id="changeStaffBtn">
+        Change Staff
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <button id="startBtn">
+        ▶️ Start Scanner
+      </button>
+
+      <button id="stopBtn">
+        ⏹️ Stop Scanner
+      </button>
+
+    </div>
+
+    <div id="reader"></div>
+
+    <div id="status">
+      🟢 Online
+    </div>
+
+    <div id="result">
+      Ready to Scan
+    </div>
+
   </div>
 
   <script src="offline.js"></script>
