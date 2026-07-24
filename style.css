@@ -246,3 +246,225 @@ button:hover{
     }
 
 }
+/* ==========================================
+   KEMP Scanner UX Effects
+========================================== */
+
+/* Screen Flash Overlay */
+
+#flashOverlay{
+
+    position:fixed;
+    inset:0;
+
+    pointer-events:none;
+
+    opacity:0;
+
+    z-index:99999;
+
+}
+
+/* Flash Colors */
+
+.flash-success{
+
+    background:#2ecc71;
+
+    animation:flashEffect .35s;
+
+}
+
+.flash-warning{
+
+    background:#f1c40f;
+
+    animation:flashEffect .35s;
+
+}
+
+.flash-error{
+
+    background:#e74c3c;
+
+    animation:flashEffect .45s;
+
+}
+
+.flash-offline{
+
+    background:#3498db;
+
+    animation:flashEffect .35s;
+
+}
+
+/* Fade Animation */
+
+@keyframes flashEffect{
+
+    0%{
+
+        opacity:.55;
+
+    }
+
+    100%{
+
+        opacity:0;
+
+    }
+
+}
+
+/* Success Pop */
+
+.result-success{
+
+    animation:successPop .22s;
+
+}
+
+.result-warning{
+
+    animation:warningShake .28s;
+
+}
+
+.result-error{
+
+    animation:errorShake .32s;
+
+}
+
+@keyframes successPop{
+
+    0%{
+
+        transform:scale(.92);
+
+    }
+
+    60%{
+
+        transform:scale(1.03);
+
+    }
+
+    100%{
+
+        transform:scale(1);
+
+    }
+
+}
+
+@keyframes warningShake{
+
+    0%{
+
+        transform:translateX(-4px);
+
+    }
+
+    25%{
+
+        transform:translateX(4px);
+
+    }
+
+    50%{
+
+        transform:translateX(-3px);
+
+    }
+
+    75%{
+
+        transform:translateX(3px);
+
+    }
+
+    100%{
+
+        transform:translateX(0);
+
+    }
+
+}
+
+@keyframes errorShake{
+
+    0%{
+
+        transform:translateX(-6px);
+
+    }
+
+    20%{
+
+        transform:translateX(6px);
+
+    }
+
+    40%{
+
+        transform:translateX(-5px);
+
+    }
+
+    60%{
+
+        transform:translateX(5px);
+
+    }
+
+    80%{
+
+        transform:translateX(-3px);
+
+    }
+
+    100%{
+
+        transform:translateX(0);
+
+    }
+
+}
+
+/* Smooth Button Press */
+
+button:active{
+
+    transform:scale(.97);
+
+}
+
+/* Reader Smooth */
+
+#reader{
+
+    transition:.25s;
+
+}
+
+/* Status Fade */
+
+#status{
+
+    transition:.25s;
+
+}
+
+/* Result Fade */
+
+#result{
+
+    transition:
+        background .25s,
+        color .25s,
+        border .25s,
+        transform .2s;
+
+}
