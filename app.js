@@ -297,36 +297,6 @@ async function startScanner() {
 
 }
 // =========================
-// STOP SCANNER
-// =========================
-
-async function stopScanner() {
-
-  try {
-
-    if (!scanner || !scannerRunning) {
-      return;
-    }
-
-    await scanner.stop();
-
-    scannerRunning = false;
-
-    showResult(
-  "ready",
-  "Scanner Stopped"
-);
-
-  }
-  catch (err) {
-
-    console.error(err);
-
-  }
-
-}
-
-// =========================
 // SCAN SUCCESS
 // =========================
 
@@ -363,9 +333,9 @@ async function onScanSuccess(
       });
 
       showResult(
-  "success",
-  "Saved Offline"
-);
+        "success",
+        "Saved Offline"
+      );
 
     }
     catch (err) {
@@ -373,9 +343,9 @@ async function onScanSuccess(
       console.error(err);
 
       showResult(
-  "error",
-  "Offline Save Failed"
-);
+        "error",
+        "Offline Save Failed"
+      );
 
     }
 
@@ -390,9 +360,9 @@ async function onScanSuccess(
   }
 
   showResult(
-  "processing",
-  "Checking..."
-);
+    "processing",
+    "Checking..."
+  );
 
   try {
 
@@ -406,56 +376,59 @@ async function onScanSuccess(
       encodeURIComponent(DEVICE_NAME);
 
     const response =
-  await fetch(url, {
-    method: "GET",
-    cache: "no-store"
-  });
+      await fetch(url, {
+        method: "GET",
+        cache: "no-store"
+      });
 
-const data =
-  await response.json();
+    const data =
+      await response.json();
 
-console.log("Status:", response.status);
-console.log("API Response:", data);
+    console.log("Status:", response.status);
+    console.log("API Response:", data);
 
-if (data.success) {
+    if (data.success) {
 
-  showResult(
-    "success",
-    data.message || "Success"
-  );
+      showResult(
+        "success",
+        data.message || "Success"
+      );
 
-} else {
+    } else {
 
-  const msg =
-    (data.message || "").toLowerCase();
+      const msg =
+        (data.message || "").toLowerCase();
 
-  if (
-    msg.includes("already") ||
-    msg.includes("limit")
-  ) {
+      if (
+        msg.includes("already") ||
+        msg.includes("limit")
+      ) {
 
-    showResult(
-      "warning",
-      data.message
-    );
+        showResult(
+          "warning",
+          data.message
+        );
 
-  } else {
+      } else {
 
-    showResult(
-      "error",
-      data.message
-    );
+        showResult(
+          "error",
+          data.message
+        );
+
+      }
+
+    }
 
   }
-
-}
+  catch (err) {
 
     console.error(err);
 
     showResult(
-  "error",
-  err.toString()
-);
+      "error",
+      err.toString()
+    );
 
   }
 
