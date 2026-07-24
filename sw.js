@@ -63,14 +63,14 @@ self.addEventListener("fetch", event => {
 
         if (event.request.url.startsWith(self.location.origin)) {
 
-          const copy = networkResponse.clone();
+         if (networkResponse.ok) {
 
-          caches.open(CACHE_NAME)
-            .then(cache => {
+    const copy = networkResponse.clone();
 
-              cache.put(event.request, copy);
+    caches.open(CACHE_NAME)
+        .then(cache => cache.put(event.request, copy));
 
-            });
+}
 
         }
 
