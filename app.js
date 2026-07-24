@@ -158,6 +158,50 @@ function updateConnectionStatus() {
   }
 
 }
+// =========================
+// RESULT UI
+// =========================
+
+function showResult(type, message) {
+
+  result.className = "";
+
+  let icon = "";
+
+  switch (type) {
+
+    case "success":
+      result.classList.add("result-success");
+      icon = "✅";
+      break;
+
+    case "warning":
+      result.classList.add("result-warning");
+      icon = "⚠️";
+      break;
+
+    case "error":
+      result.classList.add("result-error");
+      icon = "❌";
+      break;
+
+    case "processing":
+      result.classList.add("result-processing");
+      icon = "⏳";
+      break;
+
+    default:
+      result.classList.add("result-ready");
+      icon = "📷";
+
+  }
+
+  result.innerHTML = `
+    <div class="result-icon">${icon}</div>
+    <div class="result-message">${message}</div>
+  `;
+
+}
 
 // =========================
 // START SCANNER
@@ -171,8 +215,10 @@ async function startScanner() {
       return;
     }
 
-    result.innerHTML =
-      "Starting camera...";
+    showResult(
+  "processing",
+  "Starting Camera..."
+);
 
     if (!scanner) {
 
@@ -231,8 +277,10 @@ async function startScanner() {
 
     scannerRunning = true;
 
-    result.innerHTML =
-      "Ready to Scan";
+    showResult(
+  "ready",
+  "Ready to Scan"
+);
 
   }
 
@@ -240,8 +288,10 @@ async function startScanner() {
 
     console.error(err);
 
-    result.innerHTML =
-      err.toString();
+    showResult(
+  "error",
+  err.toString()
+);
 
   }
 
@@ -310,16 +360,20 @@ async function onScanSuccess(
 
       });
 
-      result.innerHTML =
-        "✅ Saved Offline";
+      showResult(
+  "success",
+  "Saved Offline"
+);
 
     }
     catch (err) {
 
       console.error(err);
 
-      result.innerHTML =
-        "❌ Offline Save Failed";
+      showResult(
+  "error",
+  "Offline Save Failed"
+);
 
     }
 
@@ -333,8 +387,10 @@ async function onScanSuccess(
 
   }
 
-  result.innerHTML =
-    "Processing...";
+  showResult(
+  "processing",
+  "Checking..."
+);
 
   try {
 
@@ -356,18 +412,50 @@ async function onScanSuccess(
       });
 
     const data =
-      await response.json();
+await response.json();
 
-    result.innerHTML =
-      data.message || "Done";
+if (data.success) {
+
+  showResult(
+    "success",
+    data.message || "Success"
+  );
+
+} else {
+
+  const msg =
+    (data.message || "").toLowerCase();
+
+  if (
+    msg.includes("already") ||
+    msg.includes("limit")
+  ) {
+
+    showResult(
+      "warning",
+      data.message
+    );
+
+  } else {
+
+    showResult(
+      "error",
+      data.message
+    );
+
+  }
+
+}
 
   }
   catch (err) {
 
     console.error(err);
 
-    result.innerHTML =
-      err.toString();
+    showResult(
+  "error",
+  err.toString()
+);
 
   }
 
