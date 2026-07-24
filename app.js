@@ -312,8 +312,10 @@ async function stopScanner() {
 
     scannerRunning = false;
 
-    result.innerHTML =
-      "Scanner stopped";
+    showResult(
+  "ready",
+  "Scanner Stopped"
+);
 
   }
   catch (err) {
@@ -404,14 +406,16 @@ async function onScanSuccess(
       encodeURIComponent(DEVICE_NAME);
 
     const response =
-      await fetch(url, {
+  await fetch(url, {
+    method: "GET",
+    cache: "no-store"
+  });
 
-        method: "GET",
-        cache: "no-store"
+const data =
+  await response.json();
 
-      });
-
-    const response
+console.log("Status:", response.status);
+console.log("API Response:", data);
 
 if (data.success) {
 
@@ -445,9 +449,6 @@ if (data.success) {
   }
 
 }
-
-  }
-  catch (err) {
 
     console.error(err);
 
