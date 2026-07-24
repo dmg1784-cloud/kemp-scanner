@@ -281,85 +281,80 @@ function updateConnectionStatus() {
 
 }
 // =========================
-// SOUND & VIBRATION
+// SOUND ENGINE
 // =========================
 
-function beep(duration = 150, frequency = 800, volume = 0.3) {
+let audioContext = null;
 
-    try {
+function getAudioContext() {
 
-        const AudioContext =
+    if (!audioContext) {
+
+        const AudioCtx =
             window.AudioContext ||
             window.webkitAudioContext;
 
-        const audioCtx = new AudioContext();
+        audioContext = new AudioCtx();
 
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
+    }
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+    return audioContext;
 
-        oscillator.type = "sine";
-        oscillator.frequency.value = frequency;
-        gainNode.gain.value = volume;
+}
 
-        oscillator.start();
+function beep(
+    duration = 120,
+    frequency = 900,
+    volume = 0.25
+) {
+
+    try {
+
+        const ctx = getAudioContext();
+
+        if (ctx.state === "suspended") {
+            ctx.resume();
+        }
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.value = frequency;
+
+        gain.gain.value = volume;
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
 
         setTimeout(() => {
-            oscillator.stop();
-            audioCtx.close();
+
+            osc.stop();
+
         }, duration);
 
-    } catch (e) {
-        console.log("Beep not supported");
+    }
+    catch (err) {
+
+        console.log("Audio not supported");
+
     }
 
 }
 
-function vibrate(pattern = 200) {
+// =========================
+// VIBRATION
+// =========================
+
+function vibrate(pattern) {
 
     if ("vibrate" in navigator) {
+
         navigator.vibrate(pattern);
+
     }
-
-}
-
-function playSuccess() {
-
-    beep(120, 1000);
-    vibrate(150);
-
-}
-
-function playWarning() {
-
-    beep(100, 900);
-
-    setTimeout(() => {
-        beep(100, 900);
-    }, 180);
-
-    vibrate([120,100,120]);
-
-}
-
-function playError() {
-
-    beep(400, 350);
-
-    vibrate(400);
-
-}
-
-function playOffline() {
-
-    beep(80, 900);
-
-    setTimeout(()=>beep(80,900),120);
-    setTimeout(()=>beep(80,900),240);
-
-    vibrate([80,80,80]);
 
 }
 
