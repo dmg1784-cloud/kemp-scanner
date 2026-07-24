@@ -1,965 +1,1419 @@
+/* =====================================================
+   KEMP QR SCANNER v2.1 EVENT EDITION
+===================================================== */
+
+/* =====================================================
+   CONFIG
+===================================================== */
+
 const API_URL =
-  "https://kemp-scanner-proxy.dmg1784.workers.dev";
+"https://YOUR-CLOUDFLARE-WORKER.workers.dev";
+
+const SCAN_DELAY = 1500;
+
+const AUTO_RESUME_DELAY = 1200;
+
+const ENABLE_SOUND = true;
+
+const ENABLE_VIBRATION = true;
+
+const ENABLE_FLASH = true;
+
+/* =====================================================
+   GLOBAL STATE
+===================================================== */
 
 let STAFF = null;
 
-try {
-
-  STAFF =
-    JSON.parse(
-      localStorage.getItem("staff")
-    );
-
-}
-catch {
-
-  STAFF = null;
-
-}
-
-const DEVICE_NAME =
-  navigator.userAgent;
-
 let scanner = null;
-let scannerRunning = false;
-let lastScan = "";
 
-// =========================
-// ELEMENTS
-// =========================
+let scanLocked = false;
 
-const loginCard =
-  document.getElementById("loginCard");
+let isScanning = false;
+
+let audioContext = null;
+
+let offlineQueue = [];
+
+/* =====================================================
+   DOM ELEMENTS
+===================================================== */
+
+const loginSection =
+document.getElementById("loginSection");
 
 const scannerSection =
-  document.getElementById("scannerSection");
-
-const staffIdInput =
-  document.getElementById("staffId");
-
-const staffPinInput =
-  document.getElementById("staffPin");
+document.getElementById("scannerSection");
 
 const loginBtn =
-  document.getElementById("loginBtn");
+document.getElementById("loginBtn");
 
-const changeStaffBtn =
-  document.getElementById("changeStaffBtn");
-
-const currentStaff =
-  document.getElementById("currentStaff");
+const logoutBtn =
+document.getElementById("changeStaffBtn");
 
 const status =
-  document.getElementById("status");
+document.getElementById("status");
 
 const result =
-  document.getElementById("result");
+document.getElementById("result");
 
-const startBtn =
-  document.getElementById("startBtn");
+const reader =
+document.getElementById("reader");
 
-const stopBtn =
-  document.getElementById("stopBtn");
+const currentStaff =
+document.getElementById("currentStaff");
 
-// =========================
-// INIT
-// =========================
+const flashOverlay =
+document.getElementById("flashOverlay");
 
-init();
+const staffIdInput =
+document.getElementById("staffId");
 
-function init() {
+const pinInput =
+document.getElementById("pin");
 
-  if (STAFF) {
+const manualEntryBtn =
+document.getElementById("manualEntryBtn");
 
-    showScanner();
+const manualModal =
+document.getElementById("manualModal");
 
-  }
-  else {
+const manualCode =
+document.getElementById("manualCode");
 
-    loginCard.style.display =
-      "block";
+const verifyManualBtn =
+document.getElementById("verifyManualBtn");
 
-    scannerSection.style.display =
-      "none";
+const cancelManualBtn =
+document.getElementById("cancelManualBtn");
 
-  }
+/* =====================================================
+   INIT
+===================================================== */
 
-}
+window.addEventListener("load", initializeApp);
 
-function showScanner() {
+/* =====================================================
+   INITIALIZE
+===================================================== */
 
-  loginCard.style.display =
-    "none";
+async function initializeApp(){
 
-  scannerSection.style.display =
-    "block";
+    initAudio();
 
-  currentStaff.innerHTML =
-    "👤 " +
-    STAFF.name +
-    "<br><small>" +
-    STAFF.role +
-    "</small>";
+    restoreOfflineQueue();
 
-}
+    attachEvents();
 
-// =========================
-// LOGIN
-// =========================
+    const saved =
+    localStorage.getItem("scanner_staff");
 
-loginBtn.addEventListener(
-  "click",
-  async () => {
+    if(saved){
 
-    const staffId =
-      staffIdInput.value.trim();
+        STAFF = JSON.parse(saved);
 
-    const pin =
-      staffPinInput.value.trim();
-
-    if (!staffId || !pin) {
-
-      alert(
-        "Please enter Staff ID and PIN."
-      );
-
-      return;
+        showScanner();
 
     }
 
-    loginBtn.disabled = true;
+}
 
-    loginBtn.innerHTML =
-      "Logging in...";
+/* =====================================================
+   EVENT BINDINGS
+===================================================== */
 
-    try {
+function attachEvents(){
 
-      const response =
-        await fetch(
+    loginBtn.addEventListener(
+        "click",
+        login
+    );
 
-          API_URL +
+    logoutBtn.addEventListener(
+        "click",
+        logout
+    );
 
-          "?action=login" +
+    manualEntryBtn.addEventListener(
+        "click",
+        openManualEntry
+    );
 
-          "&staffId=" +
+    verifyManualBtn.addEventListener(
+        "click",
+        verifyManualCode
+    );
 
-          encodeURIComponent(
-            staffId
-          ) +
+    cancelManualBtn.addEventListener(
+        "click",
+        closeManualEntry
+    );
 
-          "&pin=" +
+    manualCode.addEventListener(
+        "keydown",
+        function(e){
 
-          encodeURIComponent(
-            pin
-          ),
+            if(e.key==="Enter"){
 
-          {
-            method: "GET",
-            cache: "no-store"
-          }
+                verifyManualCode();
 
+            }
+
+        }
+    );
+
+}
+
+/* =====================================================
+   AUDIO ENGINE
+===================================================== */
+
+function initAudio(){
+
+    if(!ENABLE_SOUND){
+
+        return;
+
+    }
+
+    try{
+
+        audioContext =
+        new(
+            window.AudioContext ||
+            window.webkitAudioContext
+        )();
+
+    }
+
+    catch(e){
+
+        console.log(
+            "Audio unsupported."
         );
 
-      const data =
-        await response.json();
+    }
 
-      if (!data.success) {
+}
+/* =====================================================
+   AUDIO HELPERS
+===================================================== */
 
-        alert(
-          data.message ||
-          "Login Failed"
+function playTone(freq,duration,type="sine"){
+
+    if(!ENABLE_SOUND) return;
+
+    if(!audioContext) return;
+
+    try{
+
+        if(audioContext.state==="suspended"){
+
+            audioContext.resume();
+
+        }
+
+        const osc =
+        audioContext.createOscillator();
+
+        const gain =
+        audioContext.createGain();
+
+        osc.type = type;
+
+        osc.frequency.value = freq;
+
+        gain.gain.value = 0.08;
+
+        osc.connect(gain);
+
+        gain.connect(audioContext.destination);
+
+        osc.start();
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            audioContext.currentTime + duration
+        );
+
+        osc.stop(
+            audioContext.currentTime + duration
+        );
+
+    }
+
+    catch(e){
+
+        console.log(e);
+
+    }
+
+}
+
+/* =====================================================
+   SUCCESS SOUND
+===================================================== */
+
+function playSuccess(){
+
+    playTone(750,.08);
+
+    setTimeout(function(){
+
+        playTone(980,.12);
+
+    },90);
+
+}
+
+/* =====================================================
+   WARNING SOUND
+===================================================== */
+
+function playWarning(){
+
+    playTone(500,.20,"triangle");
+
+}
+
+/* =====================================================
+   ERROR SOUND
+===================================================== */
+
+function playError(){
+
+    playTone(260,.20,"sawtooth");
+
+    setTimeout(function(){
+
+        playTone(180,.20,"sawtooth");
+
+    },120);
+
+}
+
+/* =====================================================
+   OFFLINE SOUND
+===================================================== */
+
+function playOffline(){
+
+    playTone(420,.12);
+
+    setTimeout(function(){
+
+        playTone(420,.12);
+
+    },180);
+
+}
+
+/* =====================================================
+   VIBRATION
+===================================================== */
+
+function vibrate(pattern){
+
+    if(!ENABLE_VIBRATION) return;
+
+    if(!navigator.vibrate) return;
+
+    navigator.vibrate(pattern);
+
+}
+
+function successVibrate(){
+
+    vibrate([70]);
+
+}
+
+function warningVibrate(){
+
+    vibrate([120]);
+
+}
+
+function errorVibrate(){
+
+    vibrate([200,120,200]);
+
+}
+
+function offlineVibrate(){
+
+    vibrate([80,80,80]);
+
+}
+
+/* =====================================================
+   FLASH
+===================================================== */
+
+function flashScreen(type){
+
+    if(!ENABLE_FLASH) return;
+
+    flashOverlay.className="";
+
+    switch(type){
+
+        case "success":
+
+            flashOverlay.classList.add(
+                "flash-success"
+            );
+
+            break;
+
+        case "warning":
+
+            flashOverlay.classList.add(
+                "flash-warning"
+            );
+
+            break;
+
+        case "error":
+
+            flashOverlay.classList.add(
+                "flash-error"
+            );
+
+            break;
+
+        case "offline":
+
+            flashOverlay.classList.add(
+                "flash-offline"
+            );
+
+            break;
+
+    }
+
+    setTimeout(function(){
+
+        flashOverlay.className="";
+
+    },400);
+
+}
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+function setStatus(message){
+
+    status.innerHTML = message;
+
+}
+
+/* =====================================================
+   RESULT CARD
+===================================================== */
+
+function showResult(type,title,icon){
+
+    result.className="";
+
+    result.id="result";
+
+    result.classList.add("result-"+type);
+
+    result.innerHTML=`
+
+        <div class="result-icon">
+
+            ${icon}
+
+        </div>
+
+        <div class="result-message">
+
+            ${title}
+
+        </div>
+
+    `;
+
+}
+
+/* =====================================================
+   READY SCREEN
+===================================================== */
+
+function showReady(){
+
+    showResult(
+
+        "ready",
+
+        "Ready to Scan",
+
+        "📷"
+
+    );
+
+}
+
+/* =====================================================
+   PROCESSING
+===================================================== */
+
+function showProcessing(){
+
+    result.className="";
+
+    result.id="result";
+
+    result.classList.add(
+
+        "result-processing"
+
+    );
+
+    result.innerHTML=`
+
+        <div class="spinner"></div>
+
+        <div class="result-message">
+
+            Processing...
+
+        </div>
+
+    `;
+
+}
+/* =====================================================
+   LOGIN
+===================================================== */
+
+async function login(){
+
+    const staffId =
+    staffIdInput.value.trim();
+
+    const pin =
+    pinInput.value.trim();
+
+    if(!staffId || !pin){
+
+        playWarning();
+
+        warningVibrate();
+
+        flashScreen("warning");
+
+        showResult(
+            "warning",
+            "Enter Staff ID and PIN",
+            "⚠️"
         );
 
         return;
 
-      }
-
-      STAFF =
-        data.staff;
-
-      localStorage.setItem(
-
-        "staff",
-
-        JSON.stringify(
-          STAFF
-        )
-
-      );
-
-      showScanner();
-
-    }
-    catch (err) {
-
-      console.error(err);
-
-      alert(
-        err.message ||
-        err.toString()
-      );
-
-    }
-    finally {
-
-      loginBtn.disabled = false;
-
-      loginBtn.innerHTML =
-        "Login";
-
     }
 
-  }
+    showProcessing();
 
-);
+    setStatus("Authenticating...");
 
-changeStaffBtn.addEventListener(
+    try{
 
-  "click",
+        const response = await fetch(
 
-  async () => {
+            API_URL +
+            "?action=login",
 
-    if (scannerRunning) {
+            {
 
-      await stopScanner();
+                method:"POST",
 
-    }
+                headers:{
+                    "Content-Type":"application/json"
+                },
 
-    localStorage.removeItem(
-      "staff"
-    );
+                body:JSON.stringify({
 
-    location.reload();
+                    staffId,
+                    pin
 
-  }
+                })
 
-);
+            }
 
-// =========================
-// EVENTS
-// =========================
+        );
 
-startBtn.addEventListener(
-  "click",
-  startScanner
-);
+        const data =
+        await response.json();
 
-stopBtn.addEventListener(
-  "click",
-  stopScanner
-);
+        if(!data.success){
 
-window.addEventListener(
-  "online",
-  updateConnectionStatus
-);
+            playError();
 
-window.addEventListener(
-  "offline",
-  updateConnectionStatus
-);
+            errorVibrate();
 
-updateConnectionStatus();
-// =========================
-// STATUS
-// =========================
+            flashScreen("error");
 
-function updateConnectionStatus() {
+            showResult(
+                "error",
+                data.message ||
+                "Login Failed",
+                "❌"
+            );
 
-  if (navigator.onLine) {
+            return;
 
-    status.innerHTML =
-      "🟢 Online";
-
-  }
-  else {
-
-    status.innerHTML =
-      "🔴 Offline Mode";
-
-  }
-
-}
-// =========================
-// SOUND ENGINE
-// =========================
-
-let audioContext = null;
-
-function getAudioContext() {
-
-    if (!audioContext) {
-
-        const AudioCtx =
-            window.AudioContext ||
-            window.webkitAudioContext;
-
-        audioContext = new AudioCtx();
-
-    }
-
-    return audioContext;
-
-}
-
-function beep(
-    duration = 120,
-    frequency = 900,
-    volume = 0.25
-) {
-
-    try {
-
-        const ctx = getAudioContext();
-
-        if (ctx.state === "suspended") {
-            ctx.resume();
         }
 
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        STAFF = data.staff;
 
-        osc.type = "sine";
-        osc.frequency.value = frequency;
+        localStorage.setItem(
 
-        gain.gain.value = volume;
+            "scanner_staff",
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+            JSON.stringify(STAFF)
 
-        osc.start();
+        );
 
-        setTimeout(() => {
+        playSuccess();
 
-            osc.stop();
+        successVibrate();
 
-        }, duration);
+        flashScreen("success");
 
-    }
-    catch (err) {
-
-        console.log("Audio not supported");
+        showScanner();
 
     }
 
-}
+    catch(err){
 
-// =========================
-// VIBRATION
-// =========================
+        console.log(err);
 
-function vibrate(pattern) {
+        playError();
 
-    if ("vibrate" in navigator) {
+        errorVibrate();
 
-        navigator.vibrate(pattern);
+        flashScreen("error");
 
-    }
+        showResult(
 
-}
+            "error",
 
-// =========================
-// RESULT UI
-// =========================
+            "Cannot connect to server",
 
-function showResult(
-  type,
-  message
-) {
+            "🌐"
 
-  result.className = "";
-
-  let icon = "";
-
-  switch (type) {
-
-    case "success":
-
-      result.classList.add(
-        "result-success"
-      );
-
-      icon = "✅";
-
-      break;
-
-    case "warning":
-
-      result.classList.add(
-        "result-warning"
-      );
-
-      icon = "⚠️";
-
-      break;
-
-    case "error":
-
-      result.classList.add(
-        "result-error"
-      );
-
-      icon = "❌";
-
-      break;
-
-    case "processing":
-
-      result.classList.add(
-        "result-processing"
-      );
-
-      icon = "⏳";
-
-      break;
-
-    case "ready":
-
-      result.classList.add(
-        "result-ready"
-      );
-
-      icon = "📷";
-
-      break;
-
-    default:
-
-      result.classList.add(
-        "result-ready"
-      );
-
-      icon = "📷";
-
-  }
-
-  result.innerHTML = `
-    <div class="result-icon">${icon}</div>
-    <div class="result-message">${message}</div>
-  `;
-
-}
-
-// =========================
-// START / STOP EVENTS
-// =========================
-
-startBtn.addEventListener(
-  "click",
-  startScanner
-);
-
-stopBtn.addEventListener(
-  "click",
-  stopScanner
-);
-
-// =========================
-// SCANNER STATUS
-// =========================
-
-function resetLastScan() {
-
-  setTimeout(() => {
-
-    lastScan = "";
-
-  }, 2000);
-
-}
-
-function requireLogin() {
-
-  if (!STAFF) {
-
-    showResult(
-      "error",
-      "Please login first."
-    );
-
-    return false;
-
-  }
-
-  return true;
-
-}
-// =========================
-// START SCANNER
-// =========================
-
-async function startScanner() {
-
-  if (!requireLogin()) {
-    return;
-  }
-
-  try {
-
-    if (scannerRunning) {
-      return;
-    }
-
-    showResult(
-      "processing",
-      "Starting Camera..."
-    );
-
-    if (!scanner) {
-
-      scanner =
-        new Html5Qrcode(
-          "reader"
         );
 
     }
 
-    const cameras =
-      await Html5Qrcode.getCameras();
+}
 
-    if (
-      !cameras ||
-      cameras.length === 0
-    ) {
+/* =====================================================
+   LOGOUT
+===================================================== */
 
-      throw new Error(
-        "No camera found."
-      );
+function logout(){
 
-    }
+    stopScanner();
 
-    let cameraId =
-      cameras[0].id;
+    STAFF = null;
 
-    for (const cam of cameras) {
+    localStorage.removeItem(
 
-      const label =
-        (
-          cam.label || ""
-        ).toLowerCase();
-
-      if (
-
-        label.includes("back") ||
-
-        label.includes("rear") ||
-
-        label.includes("environment")
-
-      ) {
-
-        cameraId =
-          cam.id;
-
-        break;
-
-      }
-
-    }
-
-    await scanner.start(
-
-      cameraId,
-
-      {
-
-        fps: 10,
-
-        qrbox: 250
-
-      },
-
-      onScanSuccess,
-
-      () => {
-
-        // Ignore scan errors
-
-      }
+        "scanner_staff"
 
     );
 
-    scannerRunning = true;
+    loginSection.style.display="block";
 
-    showResult(
+    scannerSection.style.display="none";
 
-      "ready",
+    staffIdInput.value="";
 
-      "Ready to Scan"
+    pinInput.value="";
 
-    );
-
-  }
-  catch (err) {
-
-    console.error(err);
-
-    showResult(
-
-      "error",
-
-      err.message ||
-      err.toString()
-
-    );
-
-  }
+    showReady();
 
 }
 
-// =========================
-// STOP SCANNER
-// =========================
+/* =====================================================
+   SHOW SCANNER
+===================================================== */
 
-async function stopScanner() {
+async function showScanner(){
 
-  try {
+    loginSection.style.display="none";
 
-    if (!scanner) {
-      return;
-    }
+    scannerSection.style.display="block";
 
-    if (scannerRunning) {
+    currentStaff.innerHTML=`
 
-      await scanner.stop();
+        👤 ${STAFF.name}<br>
 
-      scannerRunning = false;
+        <small>${STAFF.staffId}</small>
 
-    }
+    `;
 
-    await scanner.clear();
+    showReady();
 
-    scanner = null;
-
-    showResult(
-
-      "ready",
-
-      "Scanner Stopped"
-
-    );
-
-  }
-  catch (err) {
-
-    console.error(err);
-
-    showResult(
-
-      "error",
-
-      err.message ||
-      err.toString()
-
-    );
-
-  }
+    await startScanner();
 
 }
-// =========================
-// SCAN SUCCESS
-// =========================
 
-async function onScanSuccess(
-  decodedText
-) {
+/* =====================================================
+   START SCANNER
+===================================================== */
 
-  if (!scannerRunning) {
-    return;
-  }
+async function startScanner(){
 
-  if (!requireLogin()) {
-    return;
-  }
+    if(isScanning){
 
-  if (lastScan === decodedText) {
-    return;
-  }
-
-  lastScan = decodedText;
-
-  // ==========================
-  // OFFLINE MODE
-  // ==========================
-
-  if (!navigator.onLine) {
-
-    try {
-
-      await saveOfflineScan({
-
-        token:
-          decodedText,
-
-        staff:
-          STAFF.name,
-
-        device:
-          DEVICE_NAME
-
-      });
-
-      playOffline();
-
-showResult(
-    "success",
-    "Saved Offline"
-);
-
-    }
-    catch (err) {
-
-      console.error(err);
-
-      showResult(
-
-        "error",
-
-        "Offline Save Failed"
-
-      );
+        return;
 
     }
 
-    resetLastScan();
+    scanner = new Html5Qrcode(
 
-    return;
+        "reader"
 
-  }
-
-  // ==========================
-  // ONLINE MODE
-  // ==========================
-
-  showResult(
-
-    "processing",
-
-    "Checking..."
-
-  );
-
-  try {
-
-    const url =
-
-      API_URL +
-
-      "?action=scan" +
-
-      "&token=" +
-
-      encodeURIComponent(
-        decodedText
-      ) +
-
-      "&staff=" +
-
-      encodeURIComponent(
-        STAFF.name
-      ) +
-
-      "&device=" +
-
-      encodeURIComponent(
-        DEVICE_NAME
-      );
-
-    const response =
-      await fetch(
-        url,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
-
-    const data =
-      await response.json();
-
-    console.log(
-      "Status:",
-      response.status
     );
 
-    console.log(
-      "API Response:",
-      data
-    );
+    try{
 
-    if (data.success) {
+        await scanner.start(
 
-    playSuccess();
+            {
 
-    showResult(
-        "success",
-        data.message || "Success"
-    );
+                facingMode:"environment"
+
+            },
+
+            {
+
+                fps:10,
+
+                qrbox:250
+
+            },
+
+            onScanSuccess
+
+        );
+
+        isScanning=true;
+
+        setStatus(
+
+            "Ready to Scan"
+
+        );
 
     }
-    else {
 
-      const msg =
+    catch(err){
 
-        (
-          data.message || ""
-        ).toLowerCase();
+        console.log(err);
 
-      if (
+        showResult(
 
-        msg.includes(
-          "already"
-        ) ||
+            "error",
 
-        msg.includes(
-          "claimed"
-        ) ||
+            "Camera Error",
 
-        msg.includes(
-          "limit"
-        )
+            "📷"
 
-      ) {
+        );
+
+    }
+
+}
+
+/* =====================================================
+   STOP SCANNER
+===================================================== */
+
+async function stopScanner(){
+
+    if(!scanner){
+
+        return;
+
+    }
+
+    try{
+
+        await scanner.stop();
+
+        await scanner.clear();
+
+    }
+
+    catch(e){
+
+    }
+
+    scanner=null;
+
+    isScanning=false;
+
+}
+
+/* =====================================================
+   PAUSE
+===================================================== */
+
+async function pauseScanner(){
+
+    if(!scanner){
+
+        return;
+
+    }
+
+    try{
+
+        await scanner.pause();
+
+    }
+
+    catch(e){
+
+    }
+
+}
+
+/* =====================================================
+   RESUME
+===================================================== */
+
+async function resumeScanner(){
+
+    if(!scanner){
+
+        return;
+
+    }
+
+    try{
+
+        await scanner.resume();
+
+    }
+
+    catch(e){
+
+    }
+
+}
+
+/* =====================================================
+   QR SUCCESS
+===================================================== */
+
+async function onScanSuccess(qrCode){
+
+    if(scanLocked){
+
+        return;
+
+    }
+
+    scanLocked=true;
+
+    await pauseScanner();
+
+    verifyQRCode(
+
+        qrCode.trim()
+
+    );
+
+}
+/* =====================================================
+   VERIFY QR CODE
+===================================================== */
+
+async function verifyQRCode(code){
+
+    showProcessing();
+
+    setStatus("Verifying...");
+
+    try{
+
+        const response = await fetch(
+
+            API_URL +
+            "?action=scan",
+
+            {
+
+                method:"POST",
+
+                headers:{
+                    "Content-Type":"application/json"
+                },
+
+                body:JSON.stringify({
+
+                    qr:code,
+
+                    staff:STAFF.name,
+
+                    staffId:STAFF.staffId
+
+                })
+
+            }
+
+        );
+
+        const data =
+        await response.json();
+
+        handleScanResult(data);
+
+    }
+
+    catch(err){
+
+        console.log(err);
+
+        saveOffline(code);
+
+        playOffline();
+
+        offlineVibrate();
+
+        flashScreen("offline");
+
+        showResult(
+
+            "warning",
+
+            "Offline Saved",
+
+            "📡"
+
+        );
+
+        setStatus(
+
+            "Saved Offline"
+
+        );
+
+        unlockScanner();
+
+    }
+
+}
+
+/* =====================================================
+   HANDLE RESULT
+===================================================== */
+
+function handleScanResult(data){
+
+    if(data.success){
+
+        playSuccess();
+
+        successVibrate();
+
+        flashScreen("success");
+
+        showResult(
+
+            "success",
+
+            data.message ||
+
+            "Verified",
+
+            "✅"
+
+        );
+
+    }
+
+    else{
 
         playWarning();
 
-showResult(
-    "warning",
-    data.message
-);
+        warningVibrate();
 
-      }
-      else {
+        flashScreen("warning");
 
-        playError();
+        showResult(
 
-showResult(
-    "error",
-    data.message || "Request Failed"
-);
+            "warning",
 
-      }
+            data.message ||
+
+            "Already Claimed",
+
+            "⚠️"
+
+        );
 
     }
 
-  }
-  catch (err) {
+    setStatus(
 
-    console.error(err);
+        data.message
 
-    playError();
-
-    showResult(
-        "error",
-        err.message || err.toString()
     );
 
-  }
-
-  resetLastScan();
+    unlockScanner();
 
 }
-// =========================
-// SERVICE WORKER
-// =========================
 
-if ("serviceWorker" in navigator) {
+/* =====================================================
+   MANUAL VERIFY
+===================================================== */
 
-  window.addEventListener(
+function verifyManualCode(){
 
-    "load",
+    const code =
+    manualCode.value.trim();
 
-    () => {
+    if(!code){
 
-      navigator.serviceWorker
+        manualCode.focus();
 
-        .register("sw.js")
-
-        .then(() => {
-
-          console.log(
-
-            "✅ Service Worker Registered"
-
-          );
-
-        })
-
-        .catch((err) => {
-
-          console.error(
-
-            "Service Worker Error:",
-
-            err
-
-          );
-
-        });
+        return;
 
     }
 
-  );
+    closeManualEntry();
+
+    verifyQRCode(code);
 
 }
 
-// =========================
-// AUTO LOGIN
-// =========================
+/* =====================================================
+   OPEN MODAL
+===================================================== */
 
-if (STAFF) {
+function openManualEntry(){
 
-  console.log(
+    manualCode.value="";
 
-    "✅ Logged in:",
+    manualModal.classList.add(
 
-    STAFF.name,
+        "show"
 
-    "(" + STAFF.role + ")"
+    );
 
-  );
+    setTimeout(function(){
 
-}
-else {
+        manualCode.focus();
 
-  console.log(
-
-    "⚠️ No active staff session."
-
-  );
+    },120);
 
 }
 
-// =========================
-// DEBUG
-// =========================
+/* =====================================================
+   CLOSE MODAL
+===================================================== */
 
-window.KEMP = {
+function closeManualEntry(){
 
-  getStaff() {
+    manualModal.classList.remove(
 
-    return STAFF;
+        "show"
 
-  },
+    );
 
-  logout() {
+}
+
+/* =====================================================
+   UNLOCK SCANNER
+===================================================== */
+
+function unlockScanner(){
+
+    setTimeout(async function(){
+
+        scanLocked=false;
+
+        showReady();
+
+        setStatus(
+
+            "Ready to Scan"
+
+        );
+
+        await resumeScanner();
+
+    },
+
+    AUTO_RESUME_DELAY);
+
+}
+
+/* =====================================================
+   OFFLINE STORAGE
+===================================================== */
+
+function saveOffline(code){
+
+    offlineQueue.push({
+
+        qr:code,
+
+        staff:STAFF.name,
+
+        staffId:STAFF.staffId,
+
+        time:new Date().toISOString()
+
+    });
+
+    localStorage.setItem(
+
+        "offline_queue",
+
+        JSON.stringify(
+
+            offlineQueue
+
+        )
+
+    );
+
+}
+
+/* =====================================================
+   RESTORE OFFLINE
+===================================================== */
+
+function restoreOfflineQueue(){
+
+    const saved =
+
+    localStorage.getItem(
+
+        "offline_queue"
+
+    );
+
+    if(saved){
+
+        offlineQueue =
+
+        JSON.parse(saved);
+
+    }
+
+}
+/* =====================================================
+   OFFLINE SYNC
+===================================================== */
+
+window.addEventListener(
+
+    "online",
+
+    syncOfflineQueue
+
+);
+
+async function syncOfflineQueue(){
+
+    if(
+
+        offlineQueue.length===0 ||
+
+        !STAFF
+
+    ){
+
+        return;
+
+    }
+
+    console.log(
+
+        "Syncing offline scans..."
+
+    );
+
+    const queue=[...offlineQueue];
+
+    offlineQueue=[];
 
     localStorage.removeItem(
-      "staff"
+
+        "offline_queue"
+
     );
 
-    location.reload();
+    for(const item of queue){
 
-  },
+        try{
 
-  scanner() {
+            await fetch(
 
-    return scanner;
+                API_URL +
 
-  }
+                "?action=scan",
 
-};
+                {
+
+                    method:"POST",
+
+                    headers:{
+
+                        "Content-Type":"application/json"
+
+                    },
+
+                    body:JSON.stringify({
+
+                        qr:item.qr,
+
+                        staff:item.staff,
+
+                        staffId:item.staffId,
+
+                        offline:true,
+
+                        scannedAt:item.time
+
+                    })
+
+                }
+
+            );
+
+        }
+
+        catch(e){
+
+            offlineQueue.push(item);
+
+        }
+
+    }
+
+    localStorage.setItem(
+
+        "offline_queue",
+
+        JSON.stringify(
+
+            offlineQueue
+
+        )
+
+    );
+
+}
+
+/* =====================================================
+   CLOSE MODAL
+===================================================== */
+
+window.addEventListener(
+
+    "click",
+
+    function(e){
+
+        if(
+
+            e.target===manualModal
+
+        ){
+
+            closeManualEntry();
+
+        }
+
+    }
+
+);
+
+document.addEventListener(
+
+    "keydown",
+
+    function(e){
+
+        if(
+
+            e.key==="Escape"
+
+        ){
+
+            closeManualEntry();
+
+        }
+
+    }
+
+);
+
+/* =====================================================
+   PAGE EXIT
+===================================================== */
+
+window.addEventListener(
+
+    "beforeunload",
+
+    function(){
+
+        if(scanner){
+
+            try{
+
+                scanner.stop();
+
+            }
+
+            catch(e){
+
+            }
+
+        }
+
+    }
+
+);
+
+/* =====================================================
+   PAGE VISIBILITY
+===================================================== */
+
+document.addEventListener(
+
+    "visibilitychange",
+
+    async function(){
+
+        if(!scanner){
+
+            return;
+
+        }
+
+        if(document.hidden){
+
+            try{
+
+                await pauseScanner();
+
+            }
+
+            catch(e){
+
+            }
+
+        }
+
+        else{
+
+            if(!scanLocked){
+
+                try{
+
+                    await resumeScanner();
+
+                }
+
+                catch(e){
+
+                }
+
+            }
+
+        }
+
+    }
+
+);
+
+/* =====================================================
+   PREVENT DOUBLE TAP
+===================================================== */
+
+let lastTap=0;
+
+document.addEventListener(
+
+    "touchend",
+
+    function(e){
+
+        const now=Date.now();
+
+        if(now-lastTap<300){
+
+            e.preventDefault();
+
+        }
+
+        lastTap=now;
+
+    },
+
+    {
+
+        passive:false
+
+    }
+
+);
+
+/* =====================================================
+   DEBUG
+===================================================== */
+
+function debug(){
+
+    console.table({
+
+        staff:STAFF,
+
+        scanning:isScanning,
+
+        locked:scanLocked,
+
+        offline:offlineQueue.length
+
+    });
+
+}
+
+window.debugScanner=debug;
+
+/* =====================================================
+   APP READY
+===================================================== */
 
 console.log(
-  "🚀 KEMP Scanner Ready"
+
+    "==================================="
+
+);
+
+console.log(
+
+    "KEMP QR Scanner v2.1 Loaded"
+
+);
+
+console.log(
+
+    "==================================="
+
 );
