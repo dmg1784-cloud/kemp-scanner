@@ -29,14 +29,16 @@ content="#1976d2">
 
 <body>
 
-<!-- Screen Flash Overlay -->
+<!-- Flash Overlay -->
 <div id="flashOverlay"></div>
 
 <div class="container">
 
 <h1>KEMP Scanner</h1>
 
-<!-- STAFF LOGIN -->
+<!-- =========================
+     STAFF LOGIN
+========================= -->
 
 <div
 class="card"
@@ -64,7 +66,9 @@ Login
 
 </div>
 
-<!-- SCANNER -->
+<!-- =========================
+     SCANNER
+========================= -->
 
 <div
 id="scannerSection"
@@ -100,6 +104,21 @@ Change Staff
 
 <div id="reader"></div>
 
+<!-- Manual Entry -->
+
+<div
+class="manual-toolbar">
+
+<button
+id="manualBtn"
+type="button">
+
+⌨ Manual Entry
+
+</button>
+
+</div>
+
 <div id="status">
 
 🟢 Online
@@ -116,9 +135,61 @@ Ready
 
 </div>
 
+<!-- =========================
+     MANUAL ENTRY MODAL
+========================= -->
+
+<div
+id="manualModal"
+class="manual-modal">
+
+<div class="manual-card">
+
+<h2>
+
+Manual QR Entry
+
+</h2>
+
+<p>
+
+If the QR code cannot be scanned,
+enter the QR token manually.
+
+</p>
+
+<input
+id="manualCode"
+type="text"
+placeholder="Enter QR Token"
+autocomplete="off"
+spellcheck="false">
+
+<div class="manual-buttons">
+
+<button
+id="verifyManualBtn">
+
+✅ Verify
+
+</button>
+
+<button
+id="cancelManualBtn"
+class="secondary">
+
+✖ Cancel
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
 <script src="offline.js"></script>
 <script src="app.js"></script>
 
 </body>
-
 </html>
