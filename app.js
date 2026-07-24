@@ -280,6 +280,88 @@ function updateConnectionStatus() {
   }
 
 }
+// =========================
+// SOUND & VIBRATION
+// =========================
+
+function beep(duration = 150, frequency = 800, volume = 0.3) {
+
+    try {
+
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        const audioCtx = new AudioContext();
+
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.type = "sine";
+        oscillator.frequency.value = frequency;
+        gainNode.gain.value = volume;
+
+        oscillator.start();
+
+        setTimeout(() => {
+            oscillator.stop();
+            audioCtx.close();
+        }, duration);
+
+    } catch (e) {
+        console.log("Beep not supported");
+    }
+
+}
+
+function vibrate(pattern = 200) {
+
+    if ("vibrate" in navigator) {
+        navigator.vibrate(pattern);
+    }
+
+}
+
+function playSuccess() {
+
+    beep(120, 1000);
+    vibrate(150);
+
+}
+
+function playWarning() {
+
+    beep(100, 900);
+
+    setTimeout(() => {
+        beep(100, 900);
+    }, 180);
+
+    vibrate([120,100,120]);
+
+}
+
+function playError() {
+
+    beep(400, 350);
+
+    vibrate(400);
+
+}
+
+function playOffline() {
+
+    beep(80, 900);
+
+    setTimeout(()=>beep(80,900),120);
+    setTimeout(()=>beep(80,900),240);
+
+    vibrate([80,80,80]);
+
+}
 
 // =========================
 // RESULT UI
@@ -622,13 +704,12 @@ async function onScanSuccess(
 
       });
 
-      showResult(
+      playOffline();
 
-        "success",
-
-        "Saved Offline"
-
-      );
+showResult(
+    "success",
+    "Saved Offline"
+);
 
     }
     catch (err) {
@@ -713,14 +794,12 @@ async function onScanSuccess(
 
     if (data.success) {
 
-      showResult(
+    playSuccess();
 
+    showResult(
         "success",
-
-        data.message ||
-        "Success"
-
-      );
+        data.message || "Success"
+    );
 
     }
     else {
@@ -747,25 +826,22 @@ async function onScanSuccess(
 
       ) {
 
-        showResult(
+        playWarning();
 
-          "warning",
-
-          data.message
-
-        );
+showResult(
+    "warning",
+    data.message
+);
 
       }
       else {
 
-        showResult(
+        playError();
 
-          "error",
-
-          data.message ||
-          "Request Failed"
-
-        );
+showResult(
+    "error",
+    data.message || "Request Failed"
+);
 
       }
 
@@ -776,13 +852,11 @@ async function onScanSuccess(
 
     console.error(err);
 
+    playError();
+
     showResult(
-
-      "error",
-
-      err.message ||
-      err.toString()
-
+        "error",
+        err.message || err.toString()
     );
 
   }
