@@ -411,11 +411,7 @@ async function onScanSuccess(
 
       });
 
-    const data =
-  await response.json();
-
-console.log("Status:", response.status);
-console.log("API Response:", data);
+    const response
 
 if (data.success) {
 
