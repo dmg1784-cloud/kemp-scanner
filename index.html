@@ -42,13 +42,20 @@ id="loginCard">
 <h2>👤 Staff Login</h2>
 
 <input
-id="staffName"
+id="staffId"
 type="text"
-placeholder="Enter Staff Name">
+placeholder="Staff ID (ex. ADM001)"
+autocomplete="username">
+
+<input
+id="staffPin"
+type="password"
+placeholder="PIN"
+autocomplete="current-password">
 
 <button id="loginBtn">
 
-Continue
+Login
 
 </button>
 
@@ -62,9 +69,7 @@ style="display:none;">
 
 <div class="card">
 
-<div id="currentStaff">
-
-</div>
+<div id="currentStaff"></div>
 
 <button id="changeStaffBtn">
 
