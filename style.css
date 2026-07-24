@@ -121,19 +121,94 @@ button:hover{
 #status{
 
     text-align:center;
-    font-size:22px;
+    font-size:20px;
     font-weight:bold;
     margin-top:20px;
 
 }
 
+/* ===========================
+   RESULT CARD
+=========================== */
+
 #result{
 
-    text-align:center;
-    font-size:26px;
-    font-weight:bold;
     margin-top:20px;
-    color:#1976d2;
+    border-radius:14px;
+    padding:25px 15px;
+    text-align:center;
+    font-weight:bold;
+    transition:.25s;
+    min-height:140px;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+
+}
+
+.result-icon{
+
+    font-size:52px;
+    margin-bottom:12px;
+
+}
+
+.result-message{
+
+    font-size:26px;
+    line-height:1.3;
+
+}
+
+/* SUCCESS */
+
+.result-success{
+
+    background:#e8f5e9;
+    color:#2e7d32;
+    border:3px solid #81c784;
+
+}
+
+/* WARNING */
+
+.result-warning{
+
+    background:#fff8e1;
+    color:#ef6c00;
+    border:3px solid #ffb74d;
+
+}
+
+/* ERROR */
+
+.result-error{
+
+    background:#ffebee;
+    color:#c62828;
+    border:3px solid #ef5350;
+
+}
+
+/* PROCESSING */
+
+.result-processing{
+
+    background:#e3f2fd;
+    color:#1565c0;
+    border:3px solid #64b5f6;
+
+}
+
+/* READY */
+
+.result-ready{
+
+    background:#fafafa;
+    color:#666;
+    border:2px dashed #bbb;
 
 }
 
@@ -155,6 +230,18 @@ button:hover{
     .buttons{
 
         flex-direction:column;
+
+    }
+
+    .result-icon{
+
+        font-size:44px;
+
+    }
+
+    .result-message{
+
+        font-size:22px;
 
     }
 
