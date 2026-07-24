@@ -7,7 +7,7 @@
 ===================================================== */
 
 const API_URL =
-"https://YOUR-CLOUDFLARE-WORKER.workers.dev";
+"https://kemp-scanner-proxy.dmg1784.workers.dev";
 
 const SCAN_DELAY = 1500;
 
@@ -502,9 +502,7 @@ async function login(){
     if(!staffId || !pin){
 
         playWarning();
-
         warningVibrate();
-
         flashScreen("warning");
 
         showResult(
@@ -523,27 +521,18 @@ async function login(){
 
     try{
 
-        const response = await fetch(
+        const response =
+        await fetch(
 
             API_URL +
-            "?action=login",
 
-            {
+            "?action=login" +
 
-                method:"POST",
+            "&staffId=" +
+            encodeURIComponent(staffId) +
 
-                headers:{
-                    "Content-Type":"application/json"
-                },
-
-                body:JSON.stringify({
-
-                    staffId,
-                    pin
-
-                })
-
-            }
+            "&pin=" +
+            encodeURIComponent(pin)
 
         );
 
@@ -553,9 +542,7 @@ async function login(){
         if(!data.success){
 
             playError();
-
             errorVibrate();
-
             flashScreen("error");
 
             showResult(
@@ -565,6 +552,8 @@ async function login(){
                 "❌"
             );
 
+            setStatus("Login Failed");
+
             return;
 
         }
@@ -572,18 +561,15 @@ async function login(){
         STAFF = data.staff;
 
         localStorage.setItem(
-
             "scanner_staff",
-
             JSON.stringify(STAFF)
-
         );
 
         playSuccess();
-
         successVibrate();
-
         flashScreen("success");
+
+        setStatus("Login Successful");
 
         showScanner();
 
@@ -591,23 +577,19 @@ async function login(){
 
     catch(err){
 
-        console.log(err);
+        console.error(err);
 
         playError();
-
         errorVibrate();
-
         flashScreen("error");
 
         showResult(
-
             "error",
-
             "Cannot connect to server",
-
             "🌐"
-
         );
+
+        setStatus("Offline");
 
     }
 
@@ -624,20 +606,20 @@ function logout(){
     STAFF = null;
 
     localStorage.removeItem(
-
         "scanner_staff"
-
     );
 
-    loginSection.style.display="block";
+    loginSection.style.display = "block";
 
-    scannerSection.style.display="none";
+    scannerSection.style.display = "none";
 
-    staffIdInput.value="";
+    staffIdInput.value = "";
 
-    pinInput.value="";
+    pinInput.value = "";
 
     showReady();
+
+    setStatus("Logged Out");
 
 }
 
@@ -647,24 +629,22 @@ function logout(){
 
 async function showScanner(){
 
-    loginSection.style.display="none";
+    loginSection.style.display = "none";
 
-    scannerSection.style.display="block";
+    scannerSection.style.display = "block";
 
-    currentStaff.innerHTML=`
-
-        👤 ${STAFF.name}<br>
-
+    currentStaff.innerHTML = `
+        👤 <strong>${STAFF.name}</strong><br>
         <small>${STAFF.staffId}</small>
-
     `;
 
     showReady();
 
+    setStatus("Ready to Scan");
+
     await startScanner();
 
 }
-
 /* =====================================================
    START SCANNER
 ===================================================== */
@@ -672,62 +652,45 @@ async function showScanner(){
 async function startScanner(){
 
     if(isScanning){
-
         return;
-
     }
 
-    scanner = new Html5Qrcode(
-
-        "reader"
-
-    );
+    scanner = new Html5Qrcode("reader");
 
     try{
 
         await scanner.start(
 
             {
-
                 facingMode:"environment"
-
             },
 
             {
-
                 fps:10,
-
                 qrbox:250
-
             },
 
             onScanSuccess
 
         );
 
-        isScanning=true;
+        isScanning = true;
 
-        setStatus(
-
-            "Ready to Scan"
-
-        );
+        setStatus("📷 Scanner Ready");
 
     }
 
     catch(err){
 
-        console.log(err);
+        console.error(err);
 
         showResult(
-
             "error",
-
             "Camera Error",
-
             "📷"
-
         );
+
+        setStatus("Camera Error");
 
     }
 
@@ -740,9 +703,7 @@ async function startScanner(){
 async function stopScanner(){
 
     if(!scanner){
-
         return;
-
     }
 
     try{
@@ -755,14 +716,17 @@ async function stopScanner(){
 
     catch(e){
 
+        console.log(e);
+
     }
 
-    scanner=null;
+    scanner = null;
 
-    isScanning=false;
+    isScanning = false;
+
+    setStatus("Scanner Stopped");
 
 }
-
 /* =====================================================
    PAUSE
 ===================================================== */
@@ -846,30 +810,20 @@ async function verifyQRCode(code){
 
     try{
 
-        const response = await fetch(
+        const response =
+        await fetch(
 
             API_URL +
-            "?action=scan",
 
-            {
+            "?action=scan" +
 
-                method:"POST",
+            "&token=" +
+            encodeURIComponent(code) +
 
-                headers:{
-                    "Content-Type":"application/json"
-                },
+            "&staff=" +
+            encodeURIComponent(STAFF.name) +
 
-                body:JSON.stringify({
-
-                    qr:code,
-
-                    staff:STAFF.name,
-
-                    staffId:STAFF.staffId
-
-                })
-
-            }
+            "&device=Browser"
 
         );
 
@@ -882,7 +836,7 @@ async function verifyQRCode(code){
 
     catch(err){
 
-        console.log(err);
+        console.error(err);
 
         saveOffline(code);
 
@@ -893,19 +847,13 @@ async function verifyQRCode(code){
         flashScreen("offline");
 
         showResult(
-
             "warning",
-
             "Offline Saved",
-
             "📡"
-
         );
 
         setStatus(
-
             "Saved Offline"
-
         );
 
         unlockScanner();
@@ -1119,31 +1067,21 @@ function restoreOfflineQueue(){
 ===================================================== */
 
 window.addEventListener(
-
     "online",
-
     syncOfflineQueue
-
 );
 
 async function syncOfflineQueue(){
 
     if(
-
         offlineQueue.length===0 ||
-
         !STAFF
-
     ){
-
         return;
-
     }
 
     console.log(
-
         "Syncing offline scans..."
-
     );
 
     const queue=[...offlineQueue];
@@ -1151,9 +1089,7 @@ async function syncOfflineQueue(){
     offlineQueue=[];
 
     localStorage.removeItem(
-
         "offline_queue"
-
     );
 
     for(const item of queue){
@@ -1164,33 +1100,15 @@ async function syncOfflineQueue(){
 
                 API_URL +
 
-                "?action=scan",
+                "?action=scan" +
 
-                {
+                "&token=" +
+                encodeURIComponent(item.qr) +
 
-                    method:"POST",
+                "&staff=" +
+                encodeURIComponent(item.staff) +
 
-                    headers:{
-
-                        "Content-Type":"application/json"
-
-                    },
-
-                    body:JSON.stringify({
-
-                        qr:item.qr,
-
-                        staff:item.staff,
-
-                        staffId:item.staffId,
-
-                        offline:true,
-
-                        scannedAt:item.time
-
-                    })
-
-                }
+                "&device=Browser"
 
             );
 
@@ -1209,9 +1127,7 @@ async function syncOfflineQueue(){
         "offline_queue",
 
         JSON.stringify(
-
             offlineQueue
-
         )
 
     );
