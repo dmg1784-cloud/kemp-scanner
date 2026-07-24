@@ -1,8 +1,21 @@
 const API_URL =
   "https://kemp-scanner-proxy.dmg1784.workers.dev";
 
-let STAFF_NAME =
-  localStorage.getItem("staffName") || "";
+let STAFF = null;
+
+try {
+
+  STAFF =
+    JSON.parse(
+      localStorage.getItem("staff")
+    );
+
+}
+catch {
+
+  STAFF = null;
+
+}
 
 const DEVICE_NAME =
   navigator.userAgent;
@@ -21,8 +34,11 @@ const loginCard =
 const scannerSection =
   document.getElementById("scannerSection");
 
-const staffInput =
-  document.getElementById("staffName");
+const staffIdInput =
+  document.getElementById("staffId");
+
+const staffPinInput =
+  document.getElementById("staffPin");
 
 const loginBtn =
   document.getElementById("loginBtn");
@@ -53,14 +69,18 @@ init();
 
 function init() {
 
-  if (STAFF_NAME) {
+  if (STAFF) {
 
     showScanner();
 
-  } else {
+  }
+  else {
 
-    loginCard.style.display = "block";
-    scannerSection.style.display = "none";
+    loginCard.style.display =
+      "block";
+
+    scannerSection.style.display =
+      "none";
 
   }
 
@@ -68,11 +88,18 @@ function init() {
 
 function showScanner() {
 
-  loginCard.style.display = "none";
-  scannerSection.style.display = "block";
+  loginCard.style.display =
+    "none";
+
+  scannerSection.style.display =
+    "block";
 
   currentStaff.innerHTML =
-    "👤 " + STAFF_NAME;
+    "👤 " +
+    STAFF.name +
+    "<br><small>" +
+    STAFF.role +
+    "</small>";
 
 }
 
@@ -80,42 +107,133 @@ function showScanner() {
 // LOGIN
 // =========================
 
-loginBtn.addEventListener("click", () => {
+loginBtn.addEventListener(
+  "click",
+  async () => {
 
-  const name =
-    staffInput.value.trim();
+    const staffId =
+      staffIdInput.value.trim();
 
-  if (!name) {
+    const pin =
+      staffPinInput.value.trim();
 
-    alert("Please enter your name.");
-    return;
+    if (!staffId || !pin) {
+
+      alert(
+        "Please enter Staff ID and PIN."
+      );
+
+      return;
+
+    }
+
+    loginBtn.disabled = true;
+
+    loginBtn.innerHTML =
+      "Logging in...";
+
+    try {
+
+      const response =
+        await fetch(
+
+          API_URL +
+
+          "?action=login" +
+
+          "&staffId=" +
+
+          encodeURIComponent(
+            staffId
+          ) +
+
+          "&pin=" +
+
+          encodeURIComponent(
+            pin
+          ),
+
+          {
+            method: "GET",
+            cache: "no-store"
+          }
+
+        );
+
+      const data =
+        await response.json();
+
+      if (!data.success) {
+
+        alert(
+          data.message ||
+          "Login Failed"
+        );
+
+        return;
+
+      }
+
+      STAFF =
+        data.staff;
+
+      localStorage.setItem(
+
+        "staff",
+
+        JSON.stringify(
+          STAFF
+        )
+
+      );
+
+      showScanner();
+
+    }
+    catch (err) {
+
+      console.error(err);
+
+      alert(
+        err.message ||
+        err.toString()
+      );
+
+    }
+    finally {
+
+      loginBtn.disabled = false;
+
+      loginBtn.innerHTML =
+        "Login";
+
+    }
 
   }
 
-  STAFF_NAME = name;
+);
 
-  localStorage.setItem(
-    "staffName",
-    STAFF_NAME
-  );
+changeStaffBtn.addEventListener(
 
-  showScanner();
+  "click",
 
-});
+  async () => {
 
-changeStaffBtn.addEventListener("click", () => {
+    if (scannerRunning) {
 
-  if (scannerRunning) {
+      await stopScanner();
 
-    stopScanner();
+    }
+
+    localStorage.removeItem(
+      "staff"
+    );
+
+    location.reload();
 
   }
 
-  localStorage.removeItem("staffName");
-
-  location.reload();
-
-});
+);
 
 // =========================
 // EVENTS
@@ -153,7 +271,8 @@ function updateConnectionStatus() {
     status.innerHTML =
       "🟢 Online";
 
-  } else {
+  }
+  else {
 
     status.innerHTML =
       "🔴 Offline Mode";
@@ -166,7 +285,10 @@ function updateConnectionStatus() {
 // RESULT UI
 // =========================
 
-function showResult(type, message) {
+function showResult(
+  type,
+  message
+) {
 
   result.className = "";
 
@@ -240,11 +362,60 @@ function showResult(type, message) {
   `;
 
 }
+
+// =========================
+// START / STOP EVENTS
+// =========================
+
+startBtn.addEventListener(
+  "click",
+  startScanner
+);
+
+stopBtn.addEventListener(
+  "click",
+  stopScanner
+);
+
+// =========================
+// SCANNER STATUS
+// =========================
+
+function resetLastScan() {
+
+  setTimeout(() => {
+
+    lastScan = "";
+
+  }, 2000);
+
+}
+
+function requireLogin() {
+
+  if (!STAFF) {
+
+    showResult(
+      "error",
+      "Please login first."
+    );
+
+    return false;
+
+  }
+
+  return true;
+
+}
 // =========================
 // START SCANNER
 // =========================
 
 async function startScanner() {
+
+  if (!requireLogin()) {
+    return;
+  }
 
   try {
 
@@ -260,7 +431,9 @@ async function startScanner() {
     if (!scanner) {
 
       scanner =
-        new Html5Qrcode("reader");
+        new Html5Qrcode(
+          "reader"
+        );
 
     }
 
@@ -284,16 +457,23 @@ async function startScanner() {
     for (const cam of cameras) {
 
       const label =
-        (cam.label || "")
-          .toLowerCase();
+        (
+          cam.label || ""
+        ).toLowerCase();
 
       if (
+
         label.includes("back") ||
+
         label.includes("rear") ||
+
         label.includes("environment")
+
       ) {
 
-        cameraId = cam.id;
+        cameraId =
+          cam.id;
+
         break;
 
       }
@@ -305,14 +485,19 @@ async function startScanner() {
       cameraId,
 
       {
+
         fps: 10,
+
         qrbox: 250
+
       },
 
       onScanSuccess,
 
       () => {
+
         // Ignore scan errors
+
       }
 
     );
@@ -320,8 +505,11 @@ async function startScanner() {
     scannerRunning = true;
 
     showResult(
+
       "ready",
+
       "Ready to Scan"
+
     );
 
   }
@@ -330,13 +518,18 @@ async function startScanner() {
     console.error(err);
 
     showResult(
+
       "error",
-      err.message || err.toString()
+
+      err.message ||
+      err.toString()
+
     );
 
   }
 
 }
+
 // =========================
 // STOP SCANNER
 // =========================
@@ -346,9 +539,7 @@ async function stopScanner() {
   try {
 
     if (!scanner) {
-
       return;
-
     }
 
     if (scannerRunning) {
@@ -364,8 +555,11 @@ async function stopScanner() {
     scanner = null;
 
     showResult(
+
       "ready",
+
       "Scanner Stopped"
+
     );
 
   }
@@ -374,8 +568,12 @@ async function stopScanner() {
     console.error(err);
 
     showResult(
+
       "error",
-      err.message || err.toString()
+
+      err.message ||
+      err.toString()
+
     );
 
   }
@@ -385,9 +583,15 @@ async function stopScanner() {
 // SCAN SUCCESS
 // =========================
 
-async function onScanSuccess(decodedText) {
+async function onScanSuccess(
+  decodedText
+) {
 
   if (!scannerRunning) {
+    return;
+  }
+
+  if (!requireLogin()) {
     return;
   }
 
@@ -407,15 +611,23 @@ async function onScanSuccess(decodedText) {
 
       await saveOfflineScan({
 
-        token: decodedText,
-        staff: STAFF_NAME,
-        device: DEVICE_NAME
+        token:
+          decodedText,
+
+        staff:
+          STAFF.name,
+
+        device:
+          DEVICE_NAME
 
       });
 
       showResult(
+
         "success",
+
         "Saved Offline"
+
       );
 
     }
@@ -424,17 +636,16 @@ async function onScanSuccess(decodedText) {
       console.error(err);
 
       showResult(
+
         "error",
+
         "Offline Save Failed"
+
       );
 
     }
 
-    setTimeout(() => {
-
-      lastScan = "";
-
-    }, 2000);
+    resetLastScan();
 
     return;
 
@@ -445,61 +656,115 @@ async function onScanSuccess(decodedText) {
   // ==========================
 
   showResult(
+
     "processing",
+
     "Checking..."
+
   );
 
   try {
 
     const url =
+
       API_URL +
-      "?token=" +
-      encodeURIComponent(decodedText) +
+
+      "?action=scan" +
+
+      "&token=" +
+
+      encodeURIComponent(
+        decodedText
+      ) +
+
       "&staff=" +
-      encodeURIComponent(STAFF_NAME) +
+
+      encodeURIComponent(
+        STAFF.name
+      ) +
+
       "&device=" +
-      encodeURIComponent(DEVICE_NAME);
+
+      encodeURIComponent(
+        DEVICE_NAME
+      );
 
     const response =
-      await fetch(url, {
-        method: "GET",
-        cache: "no-store"
-      });
+      await fetch(
+        url,
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
 
     const data =
       await response.json();
 
-    console.log("Status:", response.status);
-    console.log("API Response:", data);
+    console.log(
+      "Status:",
+      response.status
+    );
+
+    console.log(
+      "API Response:",
+      data
+    );
 
     if (data.success) {
 
       showResult(
+
         "success",
-        data.message || "Success"
+
+        data.message ||
+        "Success"
+
       );
 
-    } else {
+    }
+    else {
 
       const msg =
-        (data.message || "").toLowerCase();
+
+        (
+          data.message || ""
+        ).toLowerCase();
 
       if (
-        msg.includes("already") ||
-        msg.includes("claimed") ||
-        msg.includes("limit")
+
+        msg.includes(
+          "already"
+        ) ||
+
+        msg.includes(
+          "claimed"
+        ) ||
+
+        msg.includes(
+          "limit"
+        )
+
       ) {
 
         showResult(
+
           "warning",
+
           data.message
+
         );
 
-      } else {
+      }
+      else {
 
         showResult(
+
           "error",
-          data.message || "Request Failed"
+
+          data.message ||
+          "Request Failed"
+
         );
 
       }
@@ -512,17 +777,17 @@ async function onScanSuccess(decodedText) {
     console.error(err);
 
     showResult(
+
       "error",
-      err.message || err.toString()
+
+      err.message ||
+      err.toString()
+
     );
 
   }
 
-  setTimeout(() => {
-
-    lastScan = "";
-
-  }, 2000);
+  resetLastScan();
 
 }
 // =========================
@@ -532,23 +797,33 @@ async function onScanSuccess(decodedText) {
 if ("serviceWorker" in navigator) {
 
   window.addEventListener(
+
     "load",
+
     () => {
 
       navigator.serviceWorker
+
         .register("sw.js")
+
         .then(() => {
 
           console.log(
+
             "✅ Service Worker Registered"
+
           );
 
         })
+
         .catch((err) => {
 
           console.error(
+
             "Service Worker Error:",
+
             err
+
           );
 
         });
@@ -558,3 +833,64 @@ if ("serviceWorker" in navigator) {
   );
 
 }
+
+// =========================
+// AUTO LOGIN
+// =========================
+
+if (STAFF) {
+
+  console.log(
+
+    "✅ Logged in:",
+
+    STAFF.name,
+
+    "(" + STAFF.role + ")"
+
+  );
+
+}
+else {
+
+  console.log(
+
+    "⚠️ No active staff session."
+
+  );
+
+}
+
+// =========================
+// DEBUG
+// =========================
+
+window.KEMP = {
+
+  getStaff() {
+
+    return STAFF;
+
+  },
+
+  logout() {
+
+    localStorage.removeItem(
+      "staff"
+    );
+
+    location.reload();
+
+  },
+
+  scanner() {
+
+    return scanner;
+
+  }
+
+};
+
+console.log(
+  "🚀 KEMP Scanner Ready"
+);
