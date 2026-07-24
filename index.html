@@ -6,22 +6,34 @@
 <meta charset="UTF-8">
 
 <meta
-name="viewport"
-content="width=device-width, initial-scale=1">
+    name="viewport"
+    content="width=device-width, initial-scale=1.0">
 
-<title>KEMP Scanner</title>
-
-<link
-rel="stylesheet"
-href="style.css">
+<title>KEMP QR Scanner</title>
 
 <link
-rel="manifest"
-href="manifest.json">
+    rel="stylesheet"
+    href="style.css">
+
+<link
+    rel="manifest"
+    href="manifest.json">
 
 <meta
-name="theme-color"
-content="#1976d2">
+    name="theme-color"
+    content="#1976d2">
+
+<meta
+    name="apple-mobile-web-app-capable"
+    content="yes">
+
+<meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="default">
+
+<meta
+    name="mobile-web-app-capable"
+    content="yes">
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -29,58 +41,67 @@ content="#1976d2">
 
 <body>
 
-<!-- Flash Overlay -->
+<!-- ==========================================
+     FLASH OVERLAY
+=========================================== -->
+
 <div id="flashOverlay"></div>
 
 <div class="container">
 
 <h1>KEMP Scanner</h1>
 
-<!-- =========================
+<!-- ==========================================
      STAFF LOGIN
-========================= -->
+=========================================== -->
 
-<div
-class="card"
-id="loginCard">
+<section
+    id="loginSection"
+    class="card">
 
 <h2>👤 Staff Login</h2>
 
 <input
-id="staffId"
-type="text"
-placeholder="Staff ID (ex. ADM001)"
-autocomplete="username">
+    id="staffId"
+    type="text"
+    placeholder="Staff ID"
+    autocomplete="username">
 
 <input
-id="staffPin"
-type="password"
-placeholder="PIN"
-autocomplete="current-password">
+    id="staffPin"
+    type="password"
+    placeholder="PIN"
+    autocomplete="current-password">
 
-<button id="loginBtn">
+<button
+    id="loginBtn">
 
 Login
 
 </button>
 
-</div>
+</section>
+     <!-- ==========================================
+     SCANNER SECTION
+=========================================== -->
 
-<!-- =========================
-     SCANNER
-========================= -->
-
-<div
-id="scannerSection"
-style="display:none;">
+<section
+    id="scannerSection"
+    style="display:none;">
 
 <div class="card">
 
-<div id="currentStaff"></div>
+<div id="currentStaff">
 
-<button id="changeStaffBtn">
+Not Logged In
 
-Change Staff
+</div>
+
+<button
+    id="changeStaffBtn"
+    type="button">
+
+🔄 Change Staff
 
 </button>
 
@@ -88,13 +109,17 @@ Change Staff
 
 <div class="card buttons">
 
-<button id="startBtn">
+<button
+    id="startBtn"
+    type="button">
 
 ▶️ Start Scanner
 
 </button>
 
-<button id="stopBtn">
+<button
+    id="stopBtn"
+    type="button">
 
 ⏹️ Stop Scanner
 
@@ -102,16 +127,17 @@ Change Staff
 
 </div>
 
-<div id="reader"></div>
-
-<!-- Manual Entry -->
-
 <div
-class="manual-toolbar">
+    id="reader"
+    aria-label="QR Scanner">
+
+</div>
+
+<div class="manual-toolbar">
 
 <button
-id="manualBtn"
-type="button">
+    id="manualBtn"
+    type="button">
 
 ⌨ Manual Entry
 
@@ -127,23 +153,20 @@ type="button">
 
 <div id="result">
 
-Ready
+Ready to Scan
 
 </div>
 
-</div>
-
-</div>
-
-<!-- =========================
+</section>
+     <!-- ==========================================
      MANUAL ENTRY MODAL
-========================= -->
+=========================================== -->
 
 <div
-id="manualModal"
-class="manual-modal">
+    id="manualModal"
+    class="modal">
 
-<div class="manual-card">
+<div class="modal-content">
 
 <h2>
 
@@ -159,24 +182,26 @@ enter the QR token manually.
 </p>
 
 <input
-id="manualCode"
-type="text"
-placeholder="Enter QR Token"
-autocomplete="off"
-spellcheck="false">
+    id="manualCode"
+    type="text"
+    placeholder="Enter QR Token"
+    autocomplete="off"
+    spellcheck="false">
 
 <div class="manual-buttons">
 
 <button
-id="verifyManualBtn">
+    id="verifyManualBtn"
+    type="button">
 
 ✅ Verify
 
 </button>
 
 <button
-id="cancelManualBtn"
-class="secondary">
+    id="cancelManualBtn"
+    class="secondary"
+    type="button">
 
 ✖ Cancel
 
@@ -188,8 +213,12 @@ class="secondary">
 
 </div>
 
+</div>
+
 <script src="offline.js"></script>
+
 <script src="app.js"></script>
 
 </body>
+
 </html>
