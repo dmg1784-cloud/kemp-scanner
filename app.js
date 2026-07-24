@@ -76,6 +76,10 @@ function showScanner() {
 
 }
 
+// =========================
+// LOGIN
+// =========================
+
 loginBtn.addEventListener("click", () => {
 
   const name =
@@ -138,7 +142,6 @@ window.addEventListener(
 );
 
 updateConnectionStatus();
-
 // =========================
 // STATUS
 // =========================
@@ -158,6 +161,7 @@ function updateConnectionStatus() {
   }
 
 }
+
 // =========================
 // RESULT UI
 // =========================
@@ -171,27 +175,61 @@ function showResult(type, message) {
   switch (type) {
 
     case "success":
-      result.classList.add("result-success");
+
+      result.classList.add(
+        "result-success"
+      );
+
       icon = "✅";
+
       break;
 
     case "warning":
-      result.classList.add("result-warning");
+
+      result.classList.add(
+        "result-warning"
+      );
+
       icon = "⚠️";
+
       break;
 
     case "error":
-      result.classList.add("result-error");
+
+      result.classList.add(
+        "result-error"
+      );
+
       icon = "❌";
+
       break;
 
     case "processing":
-      result.classList.add("result-processing");
+
+      result.classList.add(
+        "result-processing"
+      );
+
       icon = "⏳";
+
+      break;
+
+    case "ready":
+
+      result.classList.add(
+        "result-ready"
+      );
+
+      icon = "📷";
+
       break;
 
     default:
-      result.classList.add("result-ready");
+
+      result.classList.add(
+        "result-ready"
+      );
+
       icon = "📷";
 
   }
@@ -202,7 +240,6 @@ function showResult(type, message) {
   `;
 
 }
-
 // =========================
 // START SCANNER
 // =========================
@@ -216,9 +253,9 @@ async function startScanner() {
     }
 
     showResult(
-  "processing",
-  "Starting Camera..."
-);
+      "processing",
+      "Starting Camera..."
+    );
 
     if (!scanner) {
 
@@ -230,7 +267,10 @@ async function startScanner() {
     const cameras =
       await Html5Qrcode.getCameras();
 
-    if (!cameras || cameras.length === 0) {
+    if (
+      !cameras ||
+      cameras.length === 0
+    ) {
 
       throw new Error(
         "No camera found."
@@ -245,7 +285,7 @@ async function startScanner() {
 
       const label =
         (cam.label || "")
-        .toLowerCase();
+          .toLowerCase();
 
       if (
         label.includes("back") ||
@@ -253,9 +293,7 @@ async function startScanner() {
         label.includes("environment")
       ) {
 
-        cameraId =
-          cam.id;
-
+        cameraId = cam.id;
         break;
 
       }
@@ -271,27 +309,74 @@ async function startScanner() {
         qrbox: 250
       },
 
-      onScanSuccess
+      onScanSuccess,
+
+      () => {
+        // Ignore scan errors
+      }
 
     );
 
     scannerRunning = true;
 
     showResult(
-  "ready",
-  "Ready to Scan"
-);
+      "ready",
+      "Ready to Scan"
+    );
 
   }
-
   catch (err) {
 
     console.error(err);
 
     showResult(
-  "error",
-  err.toString()
-);
+      "error",
+      err.message || err.toString()
+    );
+
+  }
+
+}
+// =========================
+// STOP SCANNER
+// =========================
+
+async function stopScanner() {
+
+  try {
+
+    if (!scanner) {
+
+      return;
+
+    }
+
+    if (scannerRunning) {
+
+      await scanner.stop();
+
+      scannerRunning = false;
+
+    }
+
+    await scanner.clear();
+
+    scanner = null;
+
+    showResult(
+      "ready",
+      "Scanner Stopped"
+    );
+
+  }
+  catch (err) {
+
+    console.error(err);
+
+    showResult(
+      "error",
+      err.message || err.toString()
+    );
 
   }
 
@@ -300,9 +385,7 @@ async function startScanner() {
 // SCAN SUCCESS
 // =========================
 
-async function onScanSuccess(
-  decodedText
-) {
+async function onScanSuccess(decodedText) {
 
   if (!scannerRunning) {
     return;
@@ -325,9 +408,7 @@ async function onScanSuccess(
       await saveOfflineScan({
 
         token: decodedText,
-
         staff: STAFF_NAME,
-
         device: DEVICE_NAME
 
       });
@@ -358,6 +439,10 @@ async function onScanSuccess(
     return;
 
   }
+
+  // ==========================
+  // ONLINE MODE
+  // ==========================
 
   showResult(
     "processing",
@@ -401,6 +486,7 @@ async function onScanSuccess(
 
       if (
         msg.includes("already") ||
+        msg.includes("claimed") ||
         msg.includes("limit")
       ) {
 
@@ -413,7 +499,7 @@ async function onScanSuccess(
 
         showResult(
           "error",
-          data.message
+          data.message || "Request Failed"
         );
 
       }
@@ -427,7 +513,7 @@ async function onScanSuccess(
 
     showResult(
       "error",
-      err.toString()
+      err.message || err.toString()
     );
 
   }
@@ -439,7 +525,6 @@ async function onScanSuccess(
   }, 2000);
 
 }
-
 // =========================
 // SERVICE WORKER
 // =========================
@@ -459,9 +544,17 @@ if ("serviceWorker" in navigator) {
           );
 
         })
-        .catch(console.error);
+        .catch((err) => {
+
+          console.error(
+            "Service Worker Error:",
+            err
+          );
+
+        });
 
     }
+
   );
 
 }
