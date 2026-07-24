@@ -127,11 +127,12 @@ async function syncOfflineScans() {
 
     try {
 
-      const url =
-        API_URL +
-        "?token=" + encodeURIComponent(scan.token) +
-        "&staff=" + encodeURIComponent(scan.staff) +
-        "&device=" + encodeURIComponent(scan.device);
+     const url =
+  API_URL +
+  "?action=scan" +
+  "&token=" + encodeURIComponent(scan.token) +
+  "&staff=" + encodeURIComponent(scan.staff) +
+  "&device=" + encodeURIComponent(scan.device);
 
       const response = await fetch(url, {
         method: "GET",
